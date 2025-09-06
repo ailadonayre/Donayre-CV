@@ -757,6 +757,41 @@ body {
     animation-delay: 0.2s;
 }
 
+/* Equal height columns for desktop */
+@media (min-width: 1025px) {
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        align-items: stretch; /* Changed from 'start' to 'stretch' */
+    }
+    
+    /* Make left and right columns equal height */
+    .left-column,
+    .right-column {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    /* Make the second cards in each column grow to fill remaining space */
+    .experience-card,
+    .achievements-card {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Ensure content within these cards fills available space */
+    .experience-content,
+    .achievements-list {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start; /* Keep content at top */
+    }
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .content-grid {
