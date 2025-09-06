@@ -254,48 +254,28 @@ function enhanceExperience() {
     });
 }
 
-// Print PDF functionality - opens PDF file in print dialog
-function printPDF() {
-    const pdfPath = 'assets/pdf/Donayre-CV.pdf';
-    
-    // Show loading state
-    const printBtn = document.querySelector('.btn-print');
-    const originalContent = printBtn.innerHTML;
-    printBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Loading...</span>';
-    printBtn.disabled = true;
-    
-    // Try to open PDF in new window for printing
-    fetch(pdfPath)
-        .then(response => {
-            if (response.ok) {
-                // Open PDF in new window
-                const newWindow = window.open(pdfPath, '_blank');
-                if (newWindow) {
-                    // Wait for PDF to load, then trigger print
-                    newWindow.addEventListener('load', function() {
-                        setTimeout(() => {
-                            newWindow.print();
-                        }, 1000);
-                    });
-                    showTooltip('PDF opened for printing!');
-                } else {
-                    showTooltip('Please allow pop-ups to print the PDF.');
-                }
-            } else {
-                throw new Error('PDF file not found');
-            }
-        })
-        .catch(error => {
-            console.error('Error opening PDF:', error);
-            showTooltip('PDF file not found. Please check the file path.', 3000);
-        })
-        .finally(() => {
-            // Restore button
-            setTimeout(() => {
-                printBtn.innerHTML = originalContent;
-                printBtn.disabled = false;
-            }, 1000);
-        });
+// Download PDF functionality
+function downloadPDF() {
+    const pdfPath = '/Donayre-CV/assets/pdf/Donayre_CV.pdf';  // use correct file name + absolute path
+
+    const downloadBtn = document.querySelector('.btn-print');
+    const originalContent = downloadBtn.innerHTML;
+    downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Preparing...</span>';
+    downloadBtn.disabled = true;
+
+    // Create hidden link to trigger download
+    const link = document.createElement('a');
+    link.href = pdfPath;
+    link.download = 'Donayre_CV.pdf';  // suggested filename
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Restore button
+    setTimeout(() => {
+        downloadBtn.innerHTML = originalContent;
+        downloadBtn.disabled = false;
+    }, 1000);
 }
 
 // Keyboard support

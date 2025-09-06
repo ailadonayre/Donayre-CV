@@ -37,10 +37,11 @@ $profile_image = "assets/img/arcd.jpeg";
                     <h2 class="title"><?php echo $title; ?></h2>
                 </div>
                 <div class="header-right">
-                    <button onclick="printPDF()" class="btn-print">
-                        <i class="fas fa-print"></i>
-                        <span>Print CV</span>
-                    </button>
+                    <button onclick="downloadPDF()" class="btn-print">
+                    <i class="fas fa-download"></i>
+                    <span>Download CV</span>
+                </button>
+
                 </div>
             </div>
         </div>
@@ -92,68 +93,6 @@ $profile_image = "assets/img/arcd.jpeg";
                         </div>
                     </div>
 
-                    <!-- Education Card -->
-                    <div class="card education-card">
-                        <h3 class="card-title">EDUCATION</h3>
-                        <div class="timeline">
-                            <div class="timeline-item">
-                                <div class="timeline-marker"></div>
-                                <div class="timeline-content">
-                                    <h4 class="timeline-title">BS in Computer Science</h4>
-                                    <p class="timeline-subtitle">BATANGAS STATE UNIVERSITY - TNEU ALANGILAN</p>
-                                    <span class="timeline-date">2023 - Present</span>
-                                    <p class="timeline-description">Currently pursuing a Bachelor's degree with focus on software engineering, data structures, algorithms, and web development.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Technologies Card -->
-                    <div class="card technologies-card">
-                        <h3 class="card-title">TECHNOLOGIES</h3>
-                        <div class="tech-content">
-                            <div class="tech-grid">
-                                <div class="tech-category">
-                                    <h4>Frontend</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">HTML5</span>
-                                        <span class="tech-tag">CSS3</span>
-                                        <span class="tech-tag">JavaScript</span>
-                                    </div>
-                                </div>
-                                <div class="tech-category">
-                                    <h4>Backend</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">Pythom</span>
-                                        <span class="tech-tag">C++</span>
-                                        <span class="tech-tag">C#</span>
-                                        <span class="tech-tag">Java</span>
-                                    </div>
-                                </div>
-                                <div class="tech-category">
-                                    <h4>Tools</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">MySQL</span>
-                                        <span class="tech-tag">Git</span>
-                                        <span class="tech-tag">VS Code</span>
-                                    </div>
-                                </div>
-                                <div class="tech-category">
-                                    <h4>Multimedia</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">Adobe Photoshop</span>
-                                        <span class="tech-tag">Adobe Premiere Pro</span>
-                                        <span class="tech-tag">Figma</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column -->
-                <div class="right-column">
-                    
                     <!-- Experience Card -->
                     <div class="card experience-card">
                         <h3 class="card-title">EXPERIENCE</h3>
@@ -209,6 +148,68 @@ $profile_image = "assets/img/arcd.jpeg";
                         </div>
                     </div>
 
+                    <!-- Technologies Card -->
+                    <div class="card technologies-card">
+                        <h3 class="card-title">TECHNOLOGIES</h3>
+                        <div class="tech-content">
+                            <div class="tech-grid">
+                                <div class="tech-category">
+                                    <h4>Frontend</h4>
+                                    <div class="tech-tags">
+                                        <span class="tech-tag">HTML5</span>
+                                        <span class="tech-tag">CSS3</span>
+                                        <span class="tech-tag">JavaScript</span>
+                                    </div>
+                                </div>
+                                <div class="tech-category">
+                                    <h4>Backend</h4>
+                                    <div class="tech-tags">
+                                        <span class="tech-tag">Pythom</span>
+                                        <span class="tech-tag">C++</span>
+                                        <span class="tech-tag">C#</span>
+                                        <span class="tech-tag">Java</span>
+                                    </div>
+                                </div>
+                                <div class="tech-category">
+                                    <h4>Tools</h4>
+                                    <div class="tech-tags">
+                                        <span class="tech-tag">MySQL</span>
+                                        <span class="tech-tag">Git</span>
+                                        <span class="tech-tag">VS Code</span>
+                                    </div>
+                                </div>
+                                <div class="tech-category">
+                                    <h4>Multimedia</h4>
+                                    <div class="tech-tags">
+                                        <span class="tech-tag">Adobe Photoshop</span>
+                                        <span class="tech-tag">Adobe Premiere Pro</span>
+                                        <span class="tech-tag">Figma</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="right-column">
+
+                    <!-- Education Card -->
+                    <div class="card education-card">
+                        <h3 class="card-title">EDUCATION</h3>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <h4 class="timeline-title">BS in Computer Science</h4>
+                                    <p class="timeline-subtitle">BATANGAS STATE UNIVERSITY - TNEU ALANGILAN</p>
+                                    <span class="timeline-date">2023 - Present</span>
+                                    <p class="timeline-description">Currently pursuing a Bachelor's degree with focus on software engineering, data structures, algorithms, and web development.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Achievements Card -->
                     <div class="card achievements-card">
                         <h3 class="card-title">ACHIEVEMENTS</h3>
@@ -219,7 +220,7 @@ $profile_image = "assets/img/arcd.jpeg";
                                 </div>
                                 <div class="achievement-content">
                                     <h4 class="achievement-title">IoT Conference Philippines 2025</h4>
-                                    <p class="achievement-description">Clinched a spot in the Top 7 of the semi finals with CIVILIAN, an AI-powered disaster resilience platform that uses a decentralized IoT mesh with ESP32 sensors and LoRa connectivity.</p>
+                                    <p class="achievement-description">Clinched a spot in the Top 8 of the semi finals with CIVILIAN: An AI-Powered Disaster Resilience Platform using an IoT Mesh with ESP32 Sensors and LoRa Connectivity.</p>
                                     <span class="achievement-date">2025</span>
                                 </div>
                             </div>
@@ -239,7 +240,7 @@ $profile_image = "assets/img/arcd.jpeg";
                                 </div>
                                 <div class="achievement-content">
                                     <h4 class="achievement-title">Sustainability Expo 2024 Hackathon x Circular Innovation Challenge</h4>
-                                    <p class="achievement-description">Competed in Southeast Asia's biggest sustainability expo in Bangkok, Thailand as a finalist. Presented APULA, an IoT-based early warning and response system for forest fires using fish scales-based foam extinguishers.</p>
+                                    <p class="achievement-description">Competed as a Top 7 finalist in Southeast Asia's biggest sustainability expo in Bangkok, Thailand. Presented APULA: An IoT-Based Early Warning and Response System for Forest Fires using Fish Scales-Based Foam Extinguishers.</p>
                                     <span class="achievement-date">2024</span>
                                 </div>
                             </div>
@@ -249,7 +250,7 @@ $profile_image = "assets/img/arcd.jpeg";
                                 </div>
                                 <div class="achievement-content">
                                     <h4 class="achievement-title">Philippine Robotics Olympiad 2022</h4>
-                                    <p class="achievement-description">Finished second place with Project ISkan, a deep learning-based robotic solution for skin test diagnosis through image analysis.</p>
+                                    <p class="achievement-description">Finished second place with Project ISkan: A Deep Learning-Based Robotic Solution for Skin Test Diagnosis through Image Analysis.</p>
                                     <span class="achievement-date">2022</span>
                                 </div>
                             </div>
