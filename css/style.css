@@ -350,8 +350,25 @@ body {
 }
 
 /* Technologies Card */
+.tech-card {
+    grid-column: 1 / -1;  /* makes it span across both columns */
+    width: 100%;
+}
+
 .tech-content {
-    padding: 0 30px 30px 30px;
+    padding: 20px 30px; /* equal top/bottom, enough side padding */
+    display: flex;
+    justify-content: center; /* centers horizontally */
+    align-items: center;     /* centers vertically if needed */
+    box-sizing: border-box;
+    flex-direction: column;  /* ensures content stacks nicely */
+}
+
+.tech-grid {
+    display: grid;
+    grid-template-columns: repeat(2, auto); /* auto-width columns to center nicely */
+    gap: 10px 90px;
+    justify-content: center; /* center the grid itself */
 }
 
 .tech-category {
@@ -874,6 +891,12 @@ body {
     }
 }
 
+@media (max-width: 900px) {
+    .content-grid {
+        flex-direction: column;
+    }
+}
+
 @media (max-width: 480px) {
     .header-left .name {
         font-size: 1.8rem;
@@ -1011,6 +1034,12 @@ body {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .tech-grid {
+        grid-template-columns: 1fr; /* switch to single column on small screens */
     }
 }
 

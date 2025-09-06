@@ -146,51 +146,9 @@ $profile_image = "assets/img/arcd.jpeg";
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Technologies Card -->
-                    <div class="card technologies-card">
-                        <h3 class="card-title">TECHNOLOGIES</h3>
-                        <div class="tech-content">
-                            <div class="tech-grid">
-                                <div class="tech-category">
-                                    <h4>Frontend</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">HTML5</span>
-                                        <span class="tech-tag">CSS3</span>
-                                        <span class="tech-tag">JavaScript</span>
-                                    </div>
-                                </div>
-                                <div class="tech-category">
-                                    <h4>Backend</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">Pythom</span>
-                                        <span class="tech-tag">C++</span>
-                                        <span class="tech-tag">C#</span>
-                                        <span class="tech-tag">Java</span>
-                                    </div>
-                                </div>
-                                <div class="tech-category">
-                                    <h4>Tools</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">MySQL</span>
-                                        <span class="tech-tag">Git</span>
-                                        <span class="tech-tag">VS Code</span>
-                                    </div>
-                                </div>
-                                <div class="tech-category">
-                                    <h4>Multimedia</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">Adobe Photoshop</span>
-                                        <span class="tech-tag">Adobe Premiere Pro</span>
-                                        <span class="tech-tag">Figma</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    </div>                    
                 </div>
-
+                
                 <!-- Right Column -->
                 <div class="right-column">
 
@@ -253,6 +211,48 @@ $profile_image = "assets/img/arcd.jpeg";
                                     <p class="achievement-description">Finished second place with Project ISkan: A Deep Learning-Based Robotic Solution for Skin Test Diagnosis through Image Analysis.</p>
                                     <span class="achievement-date">2022</span>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>               
+            </div>
+
+            <!-- Technologies Card (full width at bottom) -->
+            <div class="card tech-card">
+                <h3 class="card-title">TECHNOLOGIES</h3>
+                <div class="tech-content">
+                    <div class="tech-grid">
+                        <div class="tech-category">
+                            <h4>Frontend</h4>
+                            <div class="tech-tags">
+                                <span class="tech-tag">HTML5</span>
+                                <span class="tech-tag">CSS3</span>
+                                <span class="tech-tag">JavaScript</span>
+                            </div>
+                        </div>
+                        <div class="tech-category">
+                            <h4>Backend</h4>
+                            <div class="tech-tags">
+                                <span class="tech-tag">Python</span>
+                                <span class="tech-tag">C++</span>
+                                <span class="tech-tag">C#</span>
+                                <span class="tech-tag">Java</span>
+                            </div>
+                        </div>
+                        <div class="tech-category">
+                            <h4>Tools</h4>
+                            <div class="tech-tags">
+                                <span class="tech-tag">MySQL</span>
+                                <span class="tech-tag">Git</span>
+                                <span class="tech-tag">VS Code</span>
+                            </div>
+                        </div>
+                        <div class="tech-category">
+                            <h4>Multimedia</h4>
+                            <div class="tech-tags">
+                                <span class="tech-tag">Adobe Photoshop</span>
+                                <span class="tech-tag">Adobe Premiere Pro</span>
+                                <span class="tech-tag">Figma</span>
                             </div>
                         </div>
                     </div>
