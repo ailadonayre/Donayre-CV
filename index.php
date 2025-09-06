@@ -38,8 +38,8 @@ $profile_image = "assets/img/arcd.jpeg";
                 </div>
                 <div class="header-right">
                     <button onclick="printPDF()" class="btn-print">
-                        <i class="fas fa-download"></i>
-                        <span>Download CV</span>
+                        <i class="fas fa-print"></i>
+                        <span>Print CV</span>
                     </button>
                 </div>
             </div>
@@ -79,10 +79,6 @@ $profile_image = "assets/img/arcd.jpeg";
                                         <span class="detail-label">Email</span>
                                         <span class="detail-value"><?php echo $email; ?></span>
                                     </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Phone</span>
-                                        <span class="detail-value"><?php echo $phone; ?></span>
-                                    </div>
                                 </div>
                                 <div class="profile-social">
                                     <a href="<?php echo $linkedin; ?>" target="_blank" class="social-icon">
@@ -96,63 +92,6 @@ $profile_image = "assets/img/arcd.jpeg";
                         </div>
                     </div>
 
-                    <!-- Technologies Card -->
-                    <div class="card technologies-card">
-                        <h3 class="card-title">TECHNOLOGIES</h3>
-                        <div class="tech-content">
-                            <div class="tech-description">
-                                <p><?php echo $summary; ?></p>
-                            </div>
-                            <div class="tech-grid">
-                                <div class="tech-category">
-                                    <h4>Frontend</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">HTML5</span>
-                                        <span class="tech-tag">CSS3</span>
-                                        <span class="tech-tag">JavaScript</span>
-                                        <span class="tech-tag">React</span>
-                                        <span class="tech-tag">Vue.js</span>
-                                        <span class="tech-tag">TypeScript</span>
-                                    </div>
-                                </div>
-                                <div class="tech-category">
-                                    <h4>Backend</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">Node.js</span>
-                                        <span class="tech-tag">PHP</span>
-                                        <span class="tech-tag">Python</span>
-                                        <span class="tech-tag">Django</span>
-                                        <span class="tech-tag">Express.js</span>
-                                        <span class="tech-tag">Laravel</span>
-                                    </div>
-                                </div>
-                                <div class="tech-category">
-                                    <h4>Database</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">MySQL</span>
-                                        <span class="tech-tag">PostgreSQL</span>
-                                        <span class="tech-tag">MongoDB</span>
-                                        <span class="tech-tag">Redis</span>
-                                    </div>
-                                </div>
-                                <div class="tech-category">
-                                    <h4>Tools</h4>
-                                    <div class="tech-tags">
-                                        <span class="tech-tag">Git</span>
-                                        <span class="tech-tag">Docker</span>
-                                        <span class="tech-tag">AWS</span>
-                                        <span class="tech-tag">Linux</span>
-                                        <span class="tech-tag">VS Code</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column -->
-                <div class="right-column">
-                    
                     <!-- Education Card -->
                     <div class="card education-card">
                         <h3 class="card-title">EDUCATION</h3>
@@ -169,14 +108,85 @@ $profile_image = "assets/img/arcd.jpeg";
                         </div>
                     </div>
 
+                    <!-- Technologies Card -->
+                    <div class="card technologies-card">
+                        <h3 class="card-title">TECHNOLOGIES</h3>
+                        <div class="tech-content">
+                            <div class="tech-grid">
+                                <div class="tech-category">
+                                    <h4>Frontend</h4>
+                                    <div class="tech-tags">
+                                        <span class="tech-tag">HTML5</span>
+                                        <span class="tech-tag">CSS3</span>
+                                        <span class="tech-tag">JavaScript</span>
+                                    </div>
+                                </div>
+                                <div class="tech-category">
+                                    <h4>Backend</h4>
+                                    <div class="tech-tags">
+                                        <span class="tech-tag">Pythom</span>
+                                        <span class="tech-tag">C++</span>
+                                        <span class="tech-tag">C#</span>
+                                        <span class="tech-tag">Java</span>
+                                    </div>
+                                </div>
+                                <div class="tech-category">
+                                    <h4>Tools</h4>
+                                    <div class="tech-tags">
+                                        <span class="tech-tag">MySQL</span>
+                                        <span class="tech-tag">Git</span>
+                                        <span class="tech-tag">VS Code</span>
+                                    </div>
+                                </div>
+                                <div class="tech-category">
+                                    <h4>Multimedia</h4>
+                                    <div class="tech-tags">
+                                        <span class="tech-tag">Adobe Photoshop</span>
+                                        <span class="tech-tag">Adobe Premiere Pro</span>
+                                        <span class="tech-tag">Figma</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="right-column">
+                    
                     <!-- Experience Card -->
                     <div class="card experience-card">
                         <h3 class="card-title">EXPERIENCE</h3>
                         <div class="experience-content">
-                            <div class="no-experience">
-                                <i class="fas fa-rocket experience-icon"></i>
-                                <h4>Ready to Start My Journey</h4>
-                                <p>As a dedicated computer science student, I'm actively seeking opportunities to apply my academic knowledge in real-world projects. I'm passionate about learning new technologies and contributing to innovative solutions.</p>
+                            <div class="experience-section">
+                                <div class="experience-item">
+                                    <div class="experience-header">
+                                        <h4 class="experience-title">Project Team Lead</h4>
+                                        <span class="experience-date">2023</span>
+                                    </div>
+                                    <p class="experience-company">Campus Management System Project</p>
+                                    <p class="experience-description">Led a team of 5 students in developing a comprehensive web application for campus management, implementing user authentication, database design, and responsive UI/UX.</p>
+                                    <div class="experience-skills">
+                                        <span class="skill-tag">Leadership</span>
+                                        <span class="skill-tag">Project Management</span>
+                                        <span class="skill-tag">Full-Stack Development</span>
+                                    </div>
+                                </div>
+
+                                <div class="experience-item">
+                                    <div class="experience-header">
+                                        <h4 class="experience-title">Student Organization Officer</h4>
+                                        <span class="experience-date">2022 - 2023</span>
+                                    </div>
+                                    <p class="experience-company">Computer Science Society</p>
+                                    <p class="experience-description">Organized technical workshops, coding competitions, and mentorship programs for fellow students. Coordinated events with 100+ participants.</p>
+                                    <div class="experience-skills">
+                                        <span class="skill-tag">Event Management</span>
+                                        <span class="skill-tag">Public Speaking</span>
+                                        <span class="skill-tag">Mentoring</span>
+                                    </div>
+                                </div>
+
                                 <div class="experience-highlights">
                                     <div class="highlight-item">
                                         <i class="fas fa-code"></i>
@@ -184,7 +194,7 @@ $profile_image = "assets/img/arcd.jpeg";
                                     </div>
                                     <div class="highlight-item">
                                         <i class="fas fa-users"></i>
-                                        <span>Team Collaboration</span>
+                                        <span>Team Leadership</span>
                                     </div>
                                     <div class="highlight-item">
                                         <i class="fas fa-lightbulb"></i>
@@ -226,16 +236,6 @@ $profile_image = "assets/img/arcd.jpeg";
                                 <div class="achievement-content">
                                     <h4 class="achievement-title">Web Development Certification</h4>
                                     <p class="achievement-description">Completed comprehensive full-stack web development certification program.</p>
-                                    <span class="achievement-date">2023</span>
-                                </div>
-                            </div>
-                            <div class="achievement-item">
-                                <div class="achievement-icon">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <div class="achievement-content">
-                                    <h4 class="achievement-title">Project Team Lead</h4>
-                                    <p class="achievement-description">Led a team of 5 students in developing a web application for campus management.</p>
                                     <span class="achievement-date">2023</span>
                                 </div>
                             </div>

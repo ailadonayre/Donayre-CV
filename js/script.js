@@ -108,6 +108,7 @@ function enhanceInteractions() {
     enhanceTimeline();
     enhanceSocialLinks();
     enhanceAchievements();
+    enhanceExperience();
     addKeyboardSupport();
 }
 
@@ -115,16 +116,11 @@ function enhanceInteractions() {
 function enhanceCards() {
     document.querySelectorAll('.card').forEach(card => {
         card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-8px) scale(1.02)';
+            this.style.transform = 'translateY(-5px)';
         });
         
         card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-        });
-        
-        // Add click ripple effect
-        card.addEventListener('click', function(e) {
-            createRipple(e, this);
+            this.style.transform = 'translateY(0)';
         });
     });
 }
@@ -151,44 +147,18 @@ function enhanceButtons() {
     });
 }
 
-// Tech tag interactions
+// Tech tag interactions - simplified hover effects
 function enhanceTechTags() {
     document.querySelectorAll('.tech-tag').forEach(tag => {
-        tag.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Add pulse animation
-            this.style.animation = 'none';
-            setTimeout(() => {
-                this.style.animation = 'pulse 0.6s ease-in-out';
-            }, 10);
-            
-            // Create floating text effect
-            createFloatingText(this.textContent, e.clientX, e.clientY);
-            
-            // Show tooltip
-            showTooltip(`${this.textContent} - Technology skill!`);
-        });
-
-        // Enhanced hover with stagger effect
+        // Simple hover effect with scale and shadow
         tag.addEventListener('mouseenter', function() {
-            const allTags = this.parentElement.querySelectorAll('.tech-tag');
-            allTags.forEach((otherTag, index) => {
-                if (otherTag !== this) {
-                    setTimeout(() => {
-                        otherTag.style.transform = 'scale(0.95)';
-                        otherTag.style.opacity = '0.7';
-                    }, index * 20);
-                }
-            });
+            this.style.transform = 'translateY(-2px) scale(1.05)';
+            this.style.boxShadow = '0 6px 15px rgba(239, 35, 60, 0.3)';
         });
         
         tag.addEventListener('mouseleave', function() {
-            const allTags = this.parentElement.querySelectorAll('.tech-tag');
-            allTags.forEach(otherTag => {
-                otherTag.style.transform = 'scale(1)';
-                otherTag.style.opacity = '1';
-            });
+            this.style.transform = 'translateY(0) scale(1)';
+            this.style.boxShadow = 'none';
         });
     });
 }
@@ -199,7 +169,7 @@ function enhanceTimeline() {
         content.addEventListener('mouseenter', function() {
             const marker = this.parentElement.querySelector('.timeline-marker');
             if (marker) {
-                marker.style.transform = 'scale(1.3)';
+                marker.style.transform = 'scale(1.2)';
                 marker.style.background = '#d80032';
             }
         });
@@ -233,60 +203,58 @@ function enhanceSocialLinks() {
             // Log interaction (for analytics)
             console.log(`Social link clicked: ${platform}`);
         });
-        
-        // Staggered hover effect for group
-        link.addEventListener('mouseenter', function() {
-            const container = this.closest('.profile-social');
-            if (container) {
-                const allLinks = container.querySelectorAll('.social-icon');
-                allLinks.forEach((otherLink, index) => {
-                    if (otherLink !== this) {
-                        setTimeout(() => {
-                            otherLink.style.transform = 'scale(0.9) translateY(2px)';
-                        }, index * 30);
-                    }
-                });
-            }
-        });
-        
-        link.addEventListener('mouseleave', function() {
-            const container = this.closest('.profile-social');
-            if (container) {
-                const allLinks = container.querySelectorAll('.social-icon');
-                allLinks.forEach(otherLink => {
-                    otherLink.style.transform = 'scale(1) translateY(0)';
-                });
-            }
-        });
     });
 }
 
-// Achievement interactions
+// Achievement interactions - simplified
 function enhanceAchievements() {
     document.querySelectorAll('.achievement-item').forEach(item => {
         item.addEventListener('mouseenter', function() {
             const icon = this.querySelector('.achievement-icon');
             if (icon) {
-                icon.style.transform = 'scale(1.1) rotate(5deg)';
+                icon.style.transform = 'scale(1.1)';
             }
         });
         
         item.addEventListener('mouseleave', function() {
             const icon = this.querySelector('.achievement-icon');
             if (icon) {
-                icon.style.transform = 'scale(1) rotate(0deg)';
+                icon.style.transform = 'scale(1)';
             }
-        });
-        
-        item.addEventListener('click', function(e) {
-            const title = this.querySelector('.achievement-title').textContent;
-            showTooltip(`Achievement: ${title}`);
-            createRipple(e, this);
         });
     });
 }
 
-// Print/Download PDF functionality
+// Experience interactions
+function enhanceExperience() {
+    document.querySelectorAll('.experience-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px)';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+
+    document.querySelectorAll('.highlight-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            const icon = this.querySelector('i');
+            if (icon) {
+                icon.style.transform = 'scale(1.2)';
+            }
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            const icon = this.querySelector('i');
+            if (icon) {
+                icon.style.transform = 'scale(1)';
+            }
+        });
+    });
+}
+
+// Print PDF functionality - opens PDF file in print dialog
 function printPDF() {
     const pdfPath = 'assets/pdf/Donayre-CV.pdf';
     
@@ -296,35 +264,30 @@ function printPDF() {
     printBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Loading...</span>';
     printBtn.disabled = true;
     
-    // Create a temporary anchor element for download
-    const downloadLink = document.createElement('a');
-    downloadLink.href = pdfPath;
-    downloadLink.download = 'John_Doe_Resume.pdf';
-    downloadLink.style.display = 'none';
-    
-    document.body.appendChild(downloadLink);
-    
-    // Check if the file exists by trying to fetch it
+    // Try to open PDF in new window for printing
     fetch(pdfPath)
         .then(response => {
             if (response.ok) {
-                // File exists, proceed with download
-                downloadLink.click();
-                showTooltip('CV download started!');
+                // Open PDF in new window
+                const newWindow = window.open(pdfPath, '_blank');
+                if (newWindow) {
+                    // Wait for PDF to load, then trigger print
+                    newWindow.addEventListener('load', function() {
+                        setTimeout(() => {
+                            newWindow.print();
+                        }, 1000);
+                    });
+                    showTooltip('PDF opened for printing!');
+                } else {
+                    showTooltip('Please allow pop-ups to print the PDF.');
+                }
             } else {
-                // File doesn't exist, show error
                 throw new Error('PDF file not found');
             }
         })
         .catch(error => {
-            console.error('Error downloading PDF:', error);
+            console.error('Error opening PDF:', error);
             showTooltip('PDF file not found. Please check the file path.', 3000);
-            
-            // Fallback: try to open in new tab
-            const newWindow = window.open(pdfPath, '_blank');
-            if (!newWindow) {
-                showTooltip('Please allow pop-ups to download the CV.', 3000);
-            }
         })
         .finally(() => {
             // Restore button
@@ -332,9 +295,6 @@ function printPDF() {
                 printBtn.innerHTML = originalContent;
                 printBtn.disabled = false;
             }, 1000);
-            
-            // Remove temporary link
-            document.body.removeChild(downloadLink);
         });
 }
 
@@ -377,7 +337,7 @@ function addKeyboardSupport() {
 // Show keyboard shortcuts help
 function showKeyboardShortcuts() {
     const shortcuts = [
-        { key: 'P', action: 'Download CV' },
+        { key: 'P', action: 'Print CV' },
         { key: 'D', action: 'Toggle dark mode' },
         { key: 'ESC', action: 'Hide tooltips' },
         { key: '?', action: 'Show this help' }
@@ -388,59 +348,6 @@ function showKeyboardShortcuts() {
 }
 
 // Utility Functions
-function createRipple(event, element) {
-    const ripple = document.createElement('span');
-    const rect = element.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
-    const x = event.clientX - rect.left - size / 2;
-    const y = event.clientY - rect.top - size / 2;
-    
-    ripple.style.cssText = `
-        position: absolute;
-        width: ${size}px;
-        height: ${size}px;
-        left: ${x}px;
-        top: ${y}px;
-        background: rgba(239, 35, 60, 0.3);
-        border-radius: 50%;
-        transform: scale(0);
-        animation: rippleEffect 0.6s ease-out;
-        pointer-events: none;
-        z-index: 1;
-    `;
-    
-    element.style.position = 'relative';
-    element.style.overflow = 'hidden';
-    element.appendChild(ripple);
-    
-    setTimeout(() => {
-        ripple.remove();
-    }, 600);
-}
-
-function createFloatingText(text, x, y) {
-    const floatingEl = document.createElement('div');
-    floatingEl.textContent = text;
-    floatingEl.style.cssText = `
-        position: fixed;
-        left: ${x}px;
-        top: ${y}px;
-        pointer-events: none;
-        color: #ef233c;
-        font-weight: 700;
-        font-size: 1rem;
-        z-index: 10000;
-        animation: floatUp 2s ease forwards;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    `;
-    
-    document.body.appendChild(floatingEl);
-    
-    setTimeout(() => {
-        floatingEl.remove();
-    }, 2000);
-}
-
 function showTooltip(message, duration = 2000) {
     // Remove existing tooltip
     const existingTooltip = document.querySelector('.custom-tooltip');
@@ -544,15 +451,8 @@ function addAccessibilityFeatures() {
         tag.setAttribute('aria-label', `Technology: ${tag.textContent}`);
     });
     
-    document.querySelectorAll('.achievement-item').forEach(item => {
-        item.setAttribute('role', 'button');
-        item.setAttribute('tabindex', '0');
-        const title = item.querySelector('.achievement-title').textContent;
-        item.setAttribute('aria-label', `Achievement: ${title}`);
-    });
-    
     // Add keyboard navigation
-    document.querySelectorAll('.tech-tag, .achievement-item').forEach(element => {
+    document.querySelectorAll('.tech-tag').forEach(element => {
         element.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
@@ -565,24 +465,6 @@ function addAccessibilityFeatures() {
 // Add required CSS animations
 const style = document.createElement('style');
 style.textContent = `
-    @keyframes rippleEffect {
-        to {
-            transform: scale(2);
-            opacity: 0;
-        }
-    }
-    
-    @keyframes floatUp {
-        0% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-        100% {
-            opacity: 0;
-            transform: translateY(-80px) scale(0.8);
-        }
-    }
-    
     @keyframes tooltipSlide {
         from {
             opacity: 0;
@@ -592,12 +474,6 @@ style.textContent = `
             opacity: 1;
             transform: translateX(-50%) translateY(0);
         }
-    }
-    
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
     }
 `;
 document.head.appendChild(style);
