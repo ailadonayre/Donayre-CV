@@ -213,6 +213,10 @@ body {
     letter-spacing: 0.5px;
 }
 
+[data-theme="dark"] .card-title {
+    color: var(--white);
+}
+
 .card-title {
     color: var(--accent-color);
     font-size: 1.5rem;
@@ -446,8 +450,12 @@ body {
     box-shadow: 0 4px 15px var(--shadow-light);
 }
 
+[data-theme="dark"] .timeline-title {
+    color: var(--white);
+}
+
 .timeline-title {
-    color: var(--accent-color);
+    color: var(--primary-color);
     font-weight: 700;
     font-size: 1.1rem;
     margin-bottom: 5px;
@@ -462,8 +470,12 @@ body {
     margin-bottom: 8px;
 }
 
-.timeline-date {
+[data-theme="dark"] .timeline-date {
     background: var(--accent-color);
+}
+
+.timeline-date {
+    background: var(--primary-color);
     color: var(--white);
     padding: 4px 12px;
     border-radius: 15px;
@@ -512,9 +524,18 @@ body {
 }
 
 .experience-title {
-    color: var(--accent-color);
+    color: var(--primary-color);
     font-weight: 700;
     font-size: 1.1rem;
+}
+
+/* Dark mode experience titles should be white */
+[data-theme="dark"] .experience-date {
+    background: var(--accent-color);
+}
+
+[data-theme="dark"] .experience-title {
+    color: var(--white);
 }
 
 .experience-date {
@@ -649,6 +670,10 @@ body {
     color: var(--text-muted);
     line-height: 1.6;
     margin-bottom: 10px;
+}
+
+[data-theme="dark"] .achievement-date {
+    background: var(--accent-color);
 }
 
 .achievement-date {

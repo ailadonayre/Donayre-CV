@@ -101,8 +101,8 @@ $profile_image = "assets/img/arcd.jpeg";
                                 <div class="timeline-content">
                                     <h4 class="timeline-title">BS in Computer Science</h4>
                                     <p class="timeline-subtitle">BATANGAS STATE UNIVERSITY - TNEU ALANGILAN</p>
-                                    <span class="timeline-date">2020 - Present</span>
-                                    <p class="timeline-description">Currently pursuing Bachelor's degree with focus on software engineering, data structures, algorithms, and web development.</p>
+                                    <span class="timeline-date">2023 - Present</span>
+                                    <p class="timeline-description">Currently pursuing a Bachelor's degree with focus on software engineering, data structures, algorithms, and web development.</p>
                                 </div>
                             </div>
                         </div>
@@ -161,29 +161,29 @@ $profile_image = "assets/img/arcd.jpeg";
                             <div class="experience-section">
                                 <div class="experience-item">
                                     <div class="experience-header">
-                                        <h4 class="experience-title">Project Team Lead</h4>
-                                        <span class="experience-date">2023</span>
+                                        <h4 class="experience-title">AI Specialist</h4>
+                                        <span class="experience-date">2025 - Present</span>
                                     </div>
-                                    <p class="experience-company">Campus Management System Project</p>
-                                    <p class="experience-description">Led a team of 5 students in developing a comprehensive web application for campus management, implementing user authentication, database design, and responsive UI/UX.</p>
+                                    <p class="experience-company">CIVILIAN</p>
+                                    <p class="experience-description">Designed AI models for risk forecasting and prediction, applying machine learning techniques to analyze data, identify patterns, and anticipate potential issues.</p>
                                     <div class="experience-skills">
-                                        <span class="skill-tag">Leadership</span>
-                                        <span class="skill-tag">Project Management</span>
-                                        <span class="skill-tag">Full-Stack Development</span>
+                                        <span class="skill-tag">Machine Learning</span>
+                                        <span class="skill-tag">Data Visualization</span>
+                                        <span class="skill-tag">Data Science and Analytics</span>
                                     </div>
                                 </div>
 
                                 <div class="experience-item">
                                     <div class="experience-header">
                                         <h4 class="experience-title">Student Organization Officer</h4>
-                                        <span class="experience-date">2022 - 2023</span>
+                                        <span class="experience-date">2023 - Present</span>
                                     </div>
-                                    <p class="experience-company">Computer Science Society</p>
-                                    <p class="experience-description">Organized technical workshops, coding competitions, and mentorship programs for fellow students. Coordinated events with 100+ participants.</p>
+                                    <p class="experience-company">Various campus-wide organizations</p>
+                                    <p class="experience-description">Produced publication materials, hosted events, and organized competitions for fellow students. Coordinated events with 100+ participants.</p>
                                     <div class="experience-skills">
-                                        <span class="skill-tag">Event Management</span>
-                                        <span class="skill-tag">Public Speaking</span>
-                                        <span class="skill-tag">Mentoring</span>
+                                        <span class="skill-tag">Social Media Management</span>
+                                        <span class="skill-tag">Graphic Design</span>
+                                        <span class="skill-tag">Hosting</span>
                                     </div>
                                 </div>
 
@@ -200,6 +200,10 @@ $profile_image = "assets/img/arcd.jpeg";
                                         <i class="fas fa-lightbulb"></i>
                                         <span>Problem Solving</span>
                                     </div>
+                                    <div class="highlight-item">
+                                        <i class="fas fa-sync-alt"></i>
+                                        <span>Adaptability</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -211,22 +215,12 @@ $profile_image = "assets/img/arcd.jpeg";
                         <div class="achievements-list">
                             <div class="achievement-item">
                                 <div class="achievement-icon">
-                                    <i class="fas fa-trophy"></i>
-                                </div>
-                                <div class="achievement-content">
-                                    <h4 class="achievement-title">Dean's List</h4>
-                                    <p class="achievement-description">Consistently maintained high academic performance throughout university studies.</p>
-                                    <span class="achievement-date">2022 - 2023</span>
-                                </div>
-                            </div>
-                            <div class="achievement-item">
-                                <div class="achievement-icon">
                                     <i class="fas fa-code"></i>
                                 </div>
                                 <div class="achievement-content">
-                                    <h4 class="achievement-title">Coding Competition Winner</h4>
-                                    <p class="achievement-description">First place in university's annual programming contest for algorithm design.</p>
-                                    <span class="achievement-date">2023</span>
+                                    <h4 class="achievement-title">IoT Conference Philippines 2025</h4>
+                                    <p class="achievement-description">Clinched a spot in the Top 7 of the semi finals with CIVILIAN, an AI-powered disaster resilience platform that uses a decentralized IoT mesh with ESP32 sensors and LoRa connectivity.</p>
+                                    <span class="achievement-date">2025</span>
                                 </div>
                             </div>
                             <div class="achievement-item">
@@ -234,9 +228,29 @@ $profile_image = "assets/img/arcd.jpeg";
                                     <i class="fas fa-certificate"></i>
                                 </div>
                                 <div class="achievement-content">
-                                    <h4 class="achievement-title">Web Development Certification</h4>
-                                    <p class="achievement-description">Completed comprehensive full-stack web development certification program.</p>
-                                    <span class="achievement-date">2023</span>
+                                    <h4 class="achievement-title">Joint Humanitarian Entrepreneurship Summer Academy 2025</h4>
+                                    <p class="achievement-description">Proposed a rainwater harvesting system in Tingloy, Batangas during a two-week service-learning program in collaboration with Lingnan University of Hong Kong students.</p>
+                                    <span class="achievement-date">2025</span>
+                                </div>
+                            </div>
+                            <div class="achievement-item">
+                                <div class="achievement-icon">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <div class="achievement-content">
+                                    <h4 class="achievement-title">Sustainability Expo 2024 Hackathon x Circular Innovation Challenge</h4>
+                                    <p class="achievement-description">Competed in Southeast Asia's biggest sustainability expo in Bangkok, Thailand as a finalist. Presented APULA, an IoT-based early warning and response system for forest fires using fish scales-based foam extinguishers.</p>
+                                    <span class="achievement-date">2024</span>
+                                </div>
+                            </div>
+                            <div class="achievement-item">
+                                <div class="achievement-icon">
+                                    <i class="fas fa-medal"></i>
+                                </div>
+                                <div class="achievement-content">
+                                    <h4 class="achievement-title">Philippine Robotics Olympiad 2022</h4>
+                                    <p class="achievement-description">Finished second place with Project ISkan, a deep learning-based robotic solution for skin test diagnosis through image analysis.</p>
+                                    <span class="achievement-date">2022</span>
                                 </div>
                             </div>
                         </div>
