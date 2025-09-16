@@ -11,7 +11,7 @@ $profile_image = "assets/img/arcd.jpeg";
 require_once 'config.php';
 
 try {
-    $stmt = $db->query("SELECT * FROM users");
+    $stmt = $db->query("SELECT version()");
     $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     echo "Query failed: " . $e->getMessage();
