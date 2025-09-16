@@ -1,18 +1,15 @@
-/* Import Montserrat font */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
 
-/* CSS Variables - New Color Palette */
 :root {
-    --primary-color: #2b2d42;       /* Dark blue */
-    --secondary-color: #8d99ae;     /* Light grayish blue */
-    --accent-color: #ef233c;        /* Red for buttons/highlights */
-    --accent-hover: #d80032;        /* Darker red for buttons/highlights */
-    --white: #edf2f4;               /* Off-white */
+    --primary-color: #2b2d42;       
+    --secondary-color: #8d99ae;     
+    --accent-color: #ef233c;        
+    --accent-hover: #d80032;        
+    --white: #edf2f4;              
     --light-gray: #f8f9fa;
     --border-gray: #e5e7eb;
     --text-light: #6b7280;
     
-    /* Theme Variables */
     --bg-primary: var(--white);
     --bg-secondary: var(--light-gray);
     --text-primary: var(--primary-color);
@@ -24,8 +21,6 @@
     --shadow-heavy: rgba(43, 45, 66, 0.18);
     --scrollbar-color: #9ca3af;
 }
-
-/* Dark Mode Variables */
 [data-theme="dark"] {
     --bg-primary: #1a1c2e;
     --bg-secondary: #2b2d42;
@@ -39,14 +34,12 @@
     --scrollbar-color: var(--accent-color);
 }
 
-/* Reset and Base Styles */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Text Selection Styles */
 ::selection {
     background-color: var(--accent-color);
     color: var(--white);
@@ -71,7 +64,6 @@ body {
     padding: 0 20px;
 }
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 10px;
 }
@@ -91,7 +83,6 @@ body {
     background: var(--accent-color);
 }
 
-/* Dark Mode Toggle */
 .dark-mode-toggle {
     position: fixed;
     top: 20px;
@@ -115,7 +106,6 @@ body {
     box-shadow: 0 6px 20px var(--shadow-heavy);
 }
 
-/* Header Styles */
 .header {
     background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
     color: var(--white);
@@ -175,7 +165,6 @@ body {
     font-size: 1.1rem;
 }
 
-/* Main Content Grid */
 .content-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -183,7 +172,6 @@ body {
     align-items: start;
 }
 
-/* Card Styles */
 .card {
     background: var(--bg-primary);
     border-radius: 16px;
@@ -240,7 +228,6 @@ body {
     border-radius: 2px;
 }
 
-/* Profile Card */
 .profile-card {
     position: relative;
 }
@@ -349,26 +336,25 @@ body {
     box-shadow: 0 6px 15px rgba(239, 35, 60, 0.3);
 }
 
-/* Technologies Card */
 .tech-card {
-    grid-column: 1 / -1;  /* makes it span across both columns */
+    grid-column: 1 / -1;
     width: 100%;
 }
 
 .tech-content {
-    padding: 20px 30px; /* equal top/bottom, enough side padding */
+    padding: 20px 30px;
     display: flex;
-    justify-content: center; /* centers horizontally */
-    align-items: center;     /* centers vertically if needed */
+    justify-content: center;
+    align-items: center; 
     box-sizing: border-box;
-    flex-direction: column;  /* ensures content stacks nicely */
+    flex-direction: column;  
 }
 
 .tech-grid {
     display: grid;
-    grid-template-columns: repeat(2, auto); /* auto-width columns to center nicely */
+    grid-template-columns: repeat(2, auto); 
     gap: 10px 90px;
-    justify-content: center; /* center the grid itself */
+    justify-content: center; 
 }
 
 .tech-category {
@@ -412,7 +398,6 @@ body {
     box-shadow: 0 6px 15px rgba(239, 35, 60, 0.3);
 }
 
-/* Education Card */
 .education-card .card-title {
     margin-bottom: 0;
 }
@@ -546,7 +531,6 @@ body {
     font-size: 1.1rem;
 }
 
-/* Dark mode experience titles should be white */
 [data-theme="dark"] .experience-date {
     background: var(--accent-color);
 }
@@ -633,7 +617,6 @@ body {
     text-align: center;
 }
 
-/* Achievements Card */
 .achievements-list {
     padding: 0 30px 30px 30px;
 }
@@ -703,7 +686,6 @@ body {
     display: inline-block;
 }
 
-/* Animations */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -750,23 +732,20 @@ body {
 .card:nth-child(3) { animation-delay: 0.3s; }
 .card:nth-child(4) { animation-delay: 0.4s; }
 
-/* Timeline Animation */
 .timeline-item {
     opacity: 0;
     animation: slideInLeft 0.6s ease-out forwards;
     animation-delay: 0.2s;
 }
 
-/* Equal height columns for desktop */
 @media (min-width: 1025px) {
     .content-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 30px;
-        align-items: stretch; /* Changed from 'start' to 'stretch' */
+        align-items: stretch;
     }
     
-    /* Make left and right columns equal height */
     .left-column,
     .right-column {
         display: flex;
@@ -774,7 +753,6 @@ body {
         height: 100%;
     }
     
-    /* Make the second cards in each column grow to fill remaining space */
     .experience-card,
     .achievements-card {
         flex: 1;
@@ -782,17 +760,15 @@ body {
         flex-direction: column;
     }
     
-    /* Ensure content within these cards fills available space */
     .experience-content,
     .achievements-list {
         flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: flex-start; /* Keep content at top */
+        justify-content: flex-start; 
     }
 }
 
-/* Responsive Design */
 @media (max-width: 1024px) {
     .content-grid {
         grid-template-columns: 1fr;
@@ -1010,7 +986,6 @@ body {
     }
 }
 
-/* Print Styles */
 @media print {
     .dark-mode-toggle,
     .btn-print {
@@ -1047,7 +1022,6 @@ body {
     }
 }
 
-/* High contrast mode support */
 @media (prefers-contrast: high) {
     .card {
         border: 2px solid var(--border-color);
@@ -1061,7 +1035,6 @@ body {
     }
 }
 
-/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -1074,11 +1047,10 @@ body {
 
 @media (max-width: 768px) {
     .tech-grid {
-        grid-template-columns: 1fr; /* switch to single column on small screens */
+        grid-template-columns: 1fr; 
     }
 }
 
-/* Focus styles for accessibility */
 button:focus,
 a:focus,
 .tech-tag:focus {
@@ -1086,7 +1058,6 @@ a:focus,
     outline-offset: 2px;
 }
 
-/* Utility classes */
 .text-center { text-align: center; }
 .text-uppercase { text-transform: uppercase; }
 .font-bold { font-weight: 700; }

@@ -1,4 +1,3 @@
-// Modern Resume Interactive Functionality
 document.addEventListener('DOMContentLoaded', function() {
     initializePage();
     initializeDarkMode();
@@ -7,16 +6,13 @@ document.addEventListener('DOMContentLoaded', function() {
     addAccessibilityFeatures();
 });
 
-// Initialize the page with smooth loading
 function initializePage() {
-    // Smooth page entrance
     document.body.style.opacity = '0';
     setTimeout(() => {
         document.body.style.opacity = '1';
         document.body.style.transition = 'opacity 0.8s ease-in';
     }, 100);
 
-    // Initialize profile image loading
     const profileImg = document.querySelector('.profile-image');
     if (profileImg) {
         profileImg.addEventListener('load', function() {
@@ -30,7 +26,6 @@ function initializePage() {
         });
     }
 
-    // Add intersection observer for animations
     const observer = new IntersectionObserver(
         (entries) => {
             entries.forEach(entry => {
@@ -47,12 +42,10 @@ function initializePage() {
     });
 }
 
-// Dark Mode Functionality
 function initializeDarkMode() {
     const darkModeToggle = document.getElementById('darkModeToggle');
     const body = document.body;
     
-    // Check for saved theme preference or default to light mode
     const savedTheme = localStorage.getItem('resume-theme') || 'light';
     applyTheme(savedTheme);
     
@@ -61,19 +54,16 @@ function initializeDarkMode() {
         const currentTheme = body.getAttribute('data-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         
-        // Add smooth transition
         body.style.transition = 'all 0.3s ease';
         applyTheme(newTheme);
         localStorage.setItem('resume-theme', newTheme);
         
-        // Animate button with rotation
         this.style.transform = 'rotate(360deg)';
         setTimeout(() => {
             this.style.transform = 'rotate(0deg)';
         }, 300);
     });
 
-    // Handle system preference changes
     if (window.matchMedia) {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         mediaQuery.addEventListener('change', function(e) {
@@ -100,7 +90,6 @@ function applyTheme(theme) {
     }
 }
 
-// Enhanced interactions
 function enhanceInteractions() {
     enhanceCards();
     enhanceButtons();
@@ -112,7 +101,6 @@ function enhanceInteractions() {
     addKeyboardSupport();
 }
 
-// Card hover effects
 function enhanceCards() {
     document.querySelectorAll('.card').forEach(card => {
         card.addEventListener('mouseenter', function() {
@@ -125,7 +113,6 @@ function enhanceCards() {
     });
 }
 
-// Button interactions
 function enhanceButtons() {
     const buttons = document.querySelectorAll('.btn-print, .dark-mode-toggle');
     
@@ -147,10 +134,8 @@ function enhanceButtons() {
     });
 }
 
-// Tech tag interactions - simplified hover effects
 function enhanceTechTags() {
     document.querySelectorAll('.tech-tag').forEach(tag => {
-        // Simple hover effect with scale and shadow
         tag.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-2px) scale(1.05)';
             this.style.boxShadow = '0 6px 15px rgba(239, 35, 60, 0.3)';
@@ -163,7 +148,6 @@ function enhanceTechTags() {
     });
 }
 
-// Timeline animations
 function enhanceTimeline() {
     document.querySelectorAll('.timeline-content').forEach(content => {
         content.addEventListener('mouseenter', function() {
@@ -184,7 +168,6 @@ function enhanceTimeline() {
     });
 }
 
-// Social link interactions
 function enhanceSocialLinks() {
     document.querySelectorAll('.social-icon').forEach(link => {
         link.addEventListener('click', function(e) {
@@ -194,19 +177,16 @@ function enhanceSocialLinks() {
                           href.includes('mailto') ? 'Email' :
                           href.includes('tel') ? 'Phone' : 'Website';
             
-            // Add click animation
             this.style.transform = 'scale(0.9)';
             setTimeout(() => {
                 this.style.transform = 'scale(1)';
             }, 150);
             
-            // Log interaction (for analytics)
             console.log(`Social link clicked: ${platform}`);
         });
     });
 }
 
-// Achievement interactions - simplified
 function enhanceAchievements() {
     document.querySelectorAll('.achievement-item').forEach(item => {
         item.addEventListener('mouseenter', function() {
@@ -225,7 +205,6 @@ function enhanceAchievements() {
     });
 }
 
-// Experience interactions
 function enhanceExperience() {
     document.querySelectorAll('.experience-item').forEach(item => {
         item.addEventListener('mouseenter', function() {
@@ -254,34 +233,29 @@ function enhanceExperience() {
     });
 }
 
-// Download PDF functionality
 function downloadPDF() {
-    const pdfPath = '/Donayre-CV/assets/pdf/Donayre_CV.pdf';  // use correct file name + absolute path
+    const pdfPath = '/Donayre-CV/assets/pdf/Donayre_CV.pdf';
 
     const downloadBtn = document.querySelector('.btn-print');
     const originalContent = downloadBtn.innerHTML;
     downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Preparing...</span>';
     downloadBtn.disabled = true;
 
-    // Create hidden link to trigger download
     const link = document.createElement('a');
     link.href = pdfPath;
-    link.download = 'Donayre_CV.pdf';  // suggested filename
+    link.download = 'Donayre_CV.pdf';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    // Restore button
     setTimeout(() => {
         downloadBtn.innerHTML = originalContent;
         downloadBtn.disabled = false;
     }, 1000);
 }
 
-// Keyboard support
 function addKeyboardSupport() {
     document.addEventListener('keydown', function(e) {
-        // Only handle shortcuts when not in input fields
         if (e.target.matches('input, textarea, [contenteditable]')) {
             return;
         }
@@ -304,7 +278,6 @@ function addKeyboardSupport() {
                 }
                 break;
             case 'escape':
-                // Hide any active tooltips
                 const tooltip = document.querySelector('.custom-tooltip');
                 if (tooltip) {
                     tooltip.remove();
@@ -314,7 +287,6 @@ function addKeyboardSupport() {
     });
 }
 
-// Show keyboard shortcuts help
 function showKeyboardShortcuts() {
     const shortcuts = [
         { key: 'P', action: 'Print CV' },
@@ -327,9 +299,7 @@ function showKeyboardShortcuts() {
     showTooltip(helpText, 4000);
 }
 
-// Utility Functions
 function showTooltip(message, duration = 2000) {
-    // Remove existing tooltip
     const existingTooltip = document.querySelector('.custom-tooltip');
     if (existingTooltip) {
         existingTooltip.remove();
@@ -370,7 +340,6 @@ function showTooltip(message, duration = 2000) {
     }, duration);
 }
 
-// Responsive handling
 function addResponsiveHandling() {
     let resizeTimer;
     
@@ -382,14 +351,12 @@ function addResponsiveHandling() {
     function handleResize() {
         const isMobile = window.innerWidth <= 768;
         
-        // Adjust animations for mobile
         if (isMobile) {
             document.querySelectorAll('.card').forEach(card => {
                 card.style.transform = 'none';
             });
         }
         
-        // Update dark mode toggle size
         const darkModeToggle = document.getElementById('darkModeToggle');
         if (window.innerWidth <= 480) {
             darkModeToggle.style.width = '40px';
@@ -402,13 +369,10 @@ function addResponsiveHandling() {
         }
     }
     
-    // Initial call
     handleResize();
 }
 
-// Accessibility features
 function addAccessibilityFeatures() {
-    // Add focus indicators
     const focusableElements = document.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
@@ -424,14 +388,12 @@ function addAccessibilityFeatures() {
         });
     });
     
-    // Add ARIA labels where needed
     document.querySelectorAll('.tech-tag').forEach(tag => {
         tag.setAttribute('role', 'button');
         tag.setAttribute('tabindex', '0');
         tag.setAttribute('aria-label', `Technology: ${tag.textContent}`);
     });
     
-    // Add keyboard navigation
     document.querySelectorAll('.tech-tag').forEach(element => {
         element.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -442,7 +404,6 @@ function addAccessibilityFeatures() {
     });
 }
 
-// Add required CSS animations
 const style = document.createElement('style');
 style.textContent = `
     @keyframes tooltipSlide {
@@ -458,7 +419,6 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Export for external use
 window.ResumeUtils = {
     printPDF,
     showTooltip,

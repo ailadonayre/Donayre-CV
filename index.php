@@ -1,17 +1,23 @@
 <?php
-// Personal Information - Easy to customize
 $name = "Aila Roshiele Donayre";
 $title = "Computer Science Student";
-$summary = "Passionate computer science student with strong foundation in programming, web development, and emerging technologies. Eager to apply academic knowledge to real-world projects and contribute to innovative solutions.";
 $email = "ailaroshieledonayre@gmail.com";
-$phone = "+63 945 297 1404";
 $linkedin = "https://www.linkedin.com/in/aila-roshiele-donayre/";
 $github = "https://github.com/ailadonayre";
-$website = "https://johndoe.dev";
 $address = "Batangas City, Batangas, Philippines 4200";
 $age = "20";
 $profile_image = "assets/img/arcd.jpeg";
+
+require_once 'config.php';
+
+try {
+    $stmt = $db->query("SELECT * FROM users");
+    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo "Query failed: " . $e->getMessage();
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,12 +29,10 @@ $profile_image = "assets/img/arcd.jpeg";
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Dark Mode Toggle -->
     <button class="dark-mode-toggle" id="darkModeToggle" aria-label="Toggle dark mode">
         <i class="fas fa-moon"></i>
     </button>
 
-    <!-- Header Section -->
     <header class="header">
         <div class="container">
             <div class="header-content">
@@ -47,15 +51,12 @@ $profile_image = "assets/img/arcd.jpeg";
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="main-content">
         <div class="container">
             <div class="content-grid">
                 
-                <!-- Left Column -->
                 <div class="left-column">
                     
-                    <!-- Profile Card -->
                     <div class="card profile-card">
                         <div class="card-header">
                             <span class="header-label">Welcome</span>
@@ -93,14 +94,13 @@ $profile_image = "assets/img/arcd.jpeg";
                         </div>
                     </div>
 
-                    <!-- Experience Card -->
                     <div class="card experience-card">
                         <h3 class="card-title">EXPERIENCE</h3>
                         <div class="experience-content">
                             <div class="experience-section">
                                 <div class="experience-item">
                                     <div class="experience-header">
-                                        <h4 class="experience-title">AI Specialist</h4>
+                                        <h4 class="experience-title">AI Engineer</h4>
                                         <span class="experience-date">2025 - Present</span>
                                     </div>
                                     <p class="experience-company">CIVILIAN</p>
@@ -149,10 +149,8 @@ $profile_image = "assets/img/arcd.jpeg";
                     </div>                    
                 </div>
                 
-                <!-- Right Column -->
                 <div class="right-column">
 
-                    <!-- Education Card -->
                     <div class="card education-card">
                         <h3 class="card-title">EDUCATION</h3>
                         <div class="timeline">
@@ -168,7 +166,6 @@ $profile_image = "assets/img/arcd.jpeg";
                         </div>
                     </div>
 
-                    <!-- Achievements Card -->
                     <div class="card achievements-card">
                         <h3 class="card-title">ACHIEVEMENTS</h3>
                         <div class="achievements-list">
@@ -178,7 +175,7 @@ $profile_image = "assets/img/arcd.jpeg";
                                 </div>
                                 <div class="achievement-content">
                                     <h4 class="achievement-title">IoT Conference Philippines 2025</h4>
-                                    <p class="achievement-description">Clinched a spot in the Top 8 of the semi finals with CIVILIAN: An AI-Powered Disaster Resilience Platform using an IoT Mesh with ESP32 Sensors and LoRa Connectivity.</p>
+                                    <p class="achievement-description">Emerged as the third runner-up with CIVILIAN: An AI-Powered Disaster Resilience Platform using an IoT Mesh with ESP32 Sensors and LoRa Connectivity.</p>
                                     <span class="achievement-date">2025</span>
                                 </div>
                             </div>
@@ -217,7 +214,6 @@ $profile_image = "assets/img/arcd.jpeg";
                 </div>               
             </div>
 
-            <!-- Technologies Card (full width at bottom) -->
             <div class="card tech-card">
                 <h3 class="card-title">TECHNOLOGIES</h3>
                 <div class="tech-content">
