@@ -1,4 +1,10 @@
 <?php
+// index.php - Protected resume page
+require_once 'auth.php';
+
+// Require login to access this page
+requireLogin();
+
 $name = "Aila Roshiele Donayre";
 $title = "Computer Science Student";
 $email = "ailaroshieledonayre@gmail.com";
@@ -17,11 +23,6 @@ try {
     echo "Query failed: " . $e->getMessage();
 }
 
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
 ?>
 
 <!DOCTYPE html>
