@@ -16,6 +16,12 @@ try {
 } catch (PDOException $e) {
     echo "Query failed: " . $e->getMessage();
 }
+
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
