@@ -1,9 +1,19 @@
 <?php
-// index.php - Protected resume page
-require_once 'auth.php';
+// index.php - Revised with OOP implementation
+require_once 'config.php';
+require_once 'session_manager.php';
+
+// Initialize session manager
+$sessionManager = new SessionManager();
 
 // Require login to access this page
-requireLogin();
+$sessionManager->requireLogin('login.php');
+
+// Get current user data
+$currentUser = $sessionManager->getCurrentUser();
+
+// Get flash messages
+$successMessage = $sessionManager->getFlash('success');
 
 $name = "Aila Roshiele Donayre";
 $title = "Computer Science Student";
@@ -14,15 +24,15 @@ $address = "Batangas City, Batangas, Philippines 4200";
 $age = "20";
 $profile_image = "assets/img/arcd.jpeg";
 
-require_once 'config.php';
-
-try {
-    $stmt = $db->query("SELECT version()");
-    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    echo "Query failed: " . $e->getMessage();
+// Test database connection (optional)
+if (isset($db)) {
+    try {
+        $stmt = $db->query("SELECT version()");
+    } catch (PDOException $e) {
+        // Handle silently or log error
+        error_log("Database query failed: " . $e->getMessage());
+    }
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -40,19 +50,36 @@ try {
         <i class="fas fa-moon"></i>
     </button>
 
+    <!-- Success message notification -->
+    <?php if ($successMessage): ?>
+    <div class="success-notification" id="successNotification">
+        <div class="notification-content">
+            <i class="fas fa-check-circle"></i>
+            <span><?php echo htmlspecialchars($successMessage); ?></span>
+            <button class="notification-close" onclick="closeNotification()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <header class="header">
         <div class="container">
             <div class="header-content">
                 <div class="header-left">
                     <h1 class="name"><?php echo $name; ?></h1>
                     <h2 class="title"><?php echo $title; ?></h2>
+                    <?php if ($currentUser): ?>
+                    <p class="user-welcome">Welcome, <strong><?php echo htmlspecialchars($currentUser['username']); ?></strong>! 
+                        <a href="logout.php" class="logout-link">Log out</a>
+                    </p>
+                    <?php endif; ?>
                 </div>
                 <div class="header-right">
                     <button onclick="downloadPDF()" class="btn-print">
-                    <i class="fas fa-download"></i>
-                    <span>Download CV</span>
-                </button>
-
+                        <i class="fas fa-download"></i>
+                        <span>Download CV</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -265,5 +292,24 @@ try {
     </main>
 
     <script src="js/script.js"></script>
+    <script>
+        // Close notification function
+        function closeNotification() {
+            const notification = document.getElementById('successNotification');
+            if (notification) {
+                notification.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }
+        }
+
+        // Auto-hide notification after 5 seconds
+        <?php if ($successMessage): ?>
+        setTimeout(() => {
+            closeNotification();
+        }, 5000);
+        <?php endif; ?>
+    </script>
 </body>
 </html>
