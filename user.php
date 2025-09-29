@@ -1,5 +1,4 @@
 <?php
-// user.php - User class following OOP principles
 
 class User {
     private $db;
@@ -11,9 +10,6 @@ class User {
         $this->db = $db;
     }
     
-    /**
-     * Set user properties
-     */
     public function setUsername($username) {
         $this->username = $this->sanitizeInput($username);
         return $this;
@@ -29,9 +25,6 @@ class User {
         return $this;
     }
     
-    /**
-     * Get user properties
-     */
     public function getUsername() {
         return $this->username;
     }
@@ -40,23 +33,16 @@ class User {
         return $this->email;
     }
     
-    /**
-     * Sanitize input data
-     */
     private function sanitizeInput($data) {
         return htmlspecialchars(stripslashes(trim($data)));
     }
     
-    /**
-     * Register a new user in database
-     */
     public function register() {
         if (!$this->db) {
             return ['success' => false, 'message' => 'Database connection not available'];
         }
         
         try {
-            // Check if username or email already exists
             $checkStmt = $this->db->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
             $checkStmt->execute([$this->username, $this->email]);
             
@@ -64,7 +50,6 @@ class User {
                 return ['success' => false, 'message' => 'Username or email already exists'];
             }
             
-            // Insert new user
             $stmt = $this->db->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
             $stmt->execute([$this->username, $this->email, $this->passwordHash]);
             
@@ -75,16 +60,11 @@ class User {
         }
     }
     
-    /**
-     * Authenticate user (supports both hardcoded admin and database users)
-     */
     public function authenticate($username, $password) {
-        // Check hardcoded admin credentials first
         if ($username === 'admin' && $password === '1234') {
             return ['success' => true, 'message' => 'Login Successful', 'user' => ['username' => 'admin', 'email' => 'admin@admin.com']];
         }
         
-        // If database is available, check database users
         if ($this->db) {
             try {
                 $stmt = $this->db->prepare("SELECT id, username, email, password_hash FROM users WHERE username = ? OR email = ?");

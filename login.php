@@ -1,36 +1,31 @@
 <?php
-// login.php - Revised with OOP principles
 require_once 'config.php';
 require_once 'user.php';
 require_once 'validator.php';
 require_once 'session_manager.php';
 
-// Initialize classes
 $sessionManager = new SessionManager();
 $validator = new Validator();
 $user = new User($db ?? null);
 
-// If already logged in, redirect to resume
 $sessionManager->redirectIfLoggedIn('index.php');
 
 $error = '';
 $success = '';
 $username = '';
 
-// Handle form submission
+$success = $sessionManager->getFlash('success');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
     
-    // Validate input using OOP validator
     if (!$validator->validateLogin($username, $password)) {
         $error = "All fields are required!";
     } else {
-        // Attempt authentication
         $result = $user->authenticate($username, $password);
         
         if ($result['success']) {
-            // Login successful - set session and redirect
             $sessionManager->loginUser($result['user']);
             $sessionManager->setFlash('success', $result['message']);
             header('Location: index.php');
@@ -51,6 +46,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="css/style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .password-wrapper {
+            position: relative;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1.1rem;
+            transition: color 0.3s ease;
+            z-index: 10;
+        }
+        
+        .password-toggle:hover {
+            color: var(--accent-color);
+        }
+        
+        .password-toggle:focus {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+        
+        .form-input-with-toggle {
+            padding-right: 45px;
+        }
+    </style>
 </head>
 <body>
     <button class="dark-mode-toggle" id="darkModeToggle" aria-label="Toggle dark mode">
@@ -92,14 +121,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="form-group">
                 <label for="password" class="form-label">Password</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    class="form-input"
-                    placeholder="Enter your password"
-                    required
-                >
+                <div class="password-wrapper">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-input form-input-with-toggle"
+                        placeholder="Enter your password"
+                        required
+                    >
+                    <button 
+                        type="button" 
+                        class="password-toggle" 
+                        onclick="togglePassword('password', this)"
+                        aria-label="Toggle password visibility"
+                    >
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
             </div>
 
             <button type="submit" class="btn-auth">
@@ -117,5 +156,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script src="js/script.js"></script>
+    <script>
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+                button.setAttribute('aria-label', 'Hide password');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+                button.setAttribute('aria-label', 'Show password');
+            }
+        }
+    </script>
 </body>
 </html>

@@ -38,6 +38,11 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+html {
+    font-family: 'Montserrat', sans-serif !important;
 }
 
 ::selection {
@@ -51,11 +56,58 @@
 }
 
 body {
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Montserrat', sans-serif !important;
     line-height: 1.6;
     color: var(--text-primary);
     background-color: var(--bg-secondary);
     transition: all 0.3s ease;
+}
+
+/* Force Montserrat on ALL form elements */
+input,
+textarea,
+select,
+button,
+option,
+optgroup {
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+/* Force Montserrat on placeholders across all browsers */
+input::placeholder,
+textarea::placeholder {
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+input::-moz-placeholder,
+textarea::-moz-placeholder {
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder {
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+/* Force on autofill state (when browser autocompletes) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    font-family: 'Montserrat', sans-serif !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+/* Override any inherited fonts */
+h1, h2, h3, h4, h5, h6,
+p, span, div, a, li, ul, ol,
+label, legend, fieldset {
+    font-family: 'Montserrat', sans-serif !important;
 }
 
 .container {
@@ -1250,6 +1302,33 @@ a:focus,
 .form-input::placeholder {
     color: var(--text-muted);
     font-weight: 400;
+}
+
+input,
+textarea,
+select,
+button {
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+.form-input {
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+.form-input::placeholder {
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+/* Ensure buttons use Montserrat */
+.btn-auth,
+.btn-print,
+.dark-mode-toggle {
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+/* Ensure password toggle button uses Montserrat */
+.password-toggle {
+    font-family: 'Montserrat', sans-serif !important;
 }
 
 .btn-auth {

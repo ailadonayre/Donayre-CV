@@ -1,18 +1,13 @@
 <?php
-// index.php - Revised with OOP implementation
 require_once 'config.php';
 require_once 'session_manager.php';
 
-// Initialize session manager
 $sessionManager = new SessionManager();
 
-// Require login to access this page
 $sessionManager->requireLogin('login.php');
 
-// Get current user data
 $currentUser = $sessionManager->getCurrentUser();
 
-// Get flash messages
 $successMessage = $sessionManager->getFlash('success');
 
 $name = "Aila Roshiele Donayre";
@@ -24,12 +19,10 @@ $address = "Batangas City, Batangas, Philippines 4200";
 $age = "20";
 $profile_image = "assets/img/arcd.jpeg";
 
-// Test database connection (optional)
 if (isset($db)) {
     try {
         $stmt = $db->query("SELECT version()");
     } catch (PDOException $e) {
-        // Handle silently or log error
         error_log("Database query failed: " . $e->getMessage());
     }
 }
@@ -50,7 +43,6 @@ if (isset($db)) {
         <i class="fas fa-moon"></i>
     </button>
 
-    <!-- Success message notification -->
     <?php if ($successMessage): ?>
     <div class="success-notification" id="successNotification">
         <div class="notification-content">
@@ -293,7 +285,6 @@ if (isset($db)) {
 
     <script src="js/script.js"></script>
     <script>
-        // Close notification function
         function closeNotification() {
             const notification = document.getElementById('successNotification');
             if (notification) {
@@ -304,7 +295,6 @@ if (isset($db)) {
             }
         }
 
-        // Auto-hide notification after 5 seconds
         <?php if ($successMessage): ?>
         setTimeout(() => {
             closeNotification();
