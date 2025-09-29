@@ -233,7 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="auth-link">
                 <a href="login.php">
                     <i class="fas fa-sign-in-alt"></i>
-                    Sign In Instead
+                    Sign in instead
                 </a>
             </div>
         </form>
