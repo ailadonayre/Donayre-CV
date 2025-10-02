@@ -47,8 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - Aila Roshiele Donayre</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         .password-wrapper {
             position: relative;
@@ -130,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <button class="dark-mode-toggle" id="darkModeToggle" aria-label="Toggle dark mode">
-        <i class="fas fa-moon"></i>
+        <i class="fa-solid fa-moon"></i>
     </button>
 
     <div class="auth-container">
@@ -142,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <?php if ($error): ?>
                 <div class="alert alert-error">
-                    <i class="fas fa-exclamation-triangle"></i>
+                    <i class="fa-solid fa-triangle-exclamation"></i>
                     <?php echo htmlspecialchars($error); ?>
                 </div>
             <?php endif; ?>
@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         onclick="togglePassword('password', this)"
                         aria-label="Toggle password visibility"
                     >
-                        <i class="fas fa-eye"></i>
+                        <i class="fa-solid fa-eye"></i>
                     </button>
                 </div>
                 <div class="password-strength" id="passwordStrength"></div>
@@ -216,13 +216,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         onclick="togglePassword('confirm_password', this)"
                         aria-label="Toggle password visibility"
                     >
-                        <i class="fas fa-eye"></i>
+                        <i class="fa-solid fa-eye"></i>
                     </button>
                 </div>
             </div>
 
             <button type="submit" class="btn-auth">
-                <i class="fas fa-user-plus"></i>
+                <i class="fa-solid fa-user-plus"></i>
                 Create Account
             </button>
 
@@ -232,7 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="auth-link">
                 <a href="login.php">
-                    <i class="fas fa-sign-in-alt"></i>
+                    <i class="fa-solid fa-right-to-bracket"></i>
                     Sign in instead
                 </a>
             </div>

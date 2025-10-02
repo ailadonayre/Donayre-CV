@@ -35,21 +35,21 @@ if (isset($db)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $name; ?> - Resume</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
     <button class="dark-mode-toggle" id="darkModeToggle" aria-label="Toggle dark mode">
-        <i class="fas fa-moon"></i>
+        <i class="fa-solid fa-moon"></i>
     </button>
 
     <?php if ($successMessage): ?>
     <div class="success-notification" id="successNotification">
         <div class="notification-content">
-            <i class="fas fa-check-circle"></i>
+            <i class="fa-solid fa-circle-check"></i>
             <span><?php echo htmlspecialchars($successMessage); ?></span>
             <button class="notification-close" onclick="closeNotification()">
-                <i class="fas fa-times"></i>
+                <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
     </div>
@@ -69,7 +69,7 @@ if (isset($db)) {
                 </div>
                 <div class="header-right">
                     <button onclick="downloadPDF()" class="btn-print">
-                        <i class="fas fa-download"></i>
+                        <i class="fa-solid fa-download"></i>
                         <span>Download CV</span>
                     </button>
                 </div>
@@ -110,10 +110,10 @@ if (isset($db)) {
                                 </div>
                                 <div class="profile-social">
                                     <a href="<?php echo $linkedin; ?>" target="_blank" class="social-icon">
-                                        <i class="fab fa-linkedin"></i>
+                                        <i class="fa-brands fa-linkedin"></i>
                                     </a>
                                     <a href="<?php echo $github; ?>" target="_blank" class="social-icon">
-                                        <i class="fab fa-github"></i>
+                                        <i class="fa-brands fa-github"></i>
                                     </a>
                                 </div>
                             </div>
@@ -154,19 +154,19 @@ if (isset($db)) {
 
                                 <div class="experience-highlights">
                                     <div class="highlight-item">
-                                        <i class="fas fa-code"></i>
+                                        <i class="fa-solid fa-code"></i>
                                         <span>Academic Projects</span>
                                     </div>
                                     <div class="highlight-item">
-                                        <i class="fas fa-users"></i>
+                                        <i class="fa-solid fa-users"></i>
                                         <span>Team Leadership</span>
                                     </div>
                                     <div class="highlight-item">
-                                        <i class="fas fa-lightbulb"></i>
+                                        <i class="fa-solid fa-lightbulb"></i>
                                         <span>Problem Solving</span>
                                     </div>
                                     <div class="highlight-item">
-                                        <i class="fas fa-sync-alt"></i>
+                                        <i class="fa-solid fa-rotate-right"></i> 
                                         <span>Adaptability</span>
                                     </div>
                                 </div>
@@ -197,7 +197,7 @@ if (isset($db)) {
                         <div class="achievements-list">
                             <div class="achievement-item">
                                 <div class="achievement-icon">
-                                    <i class="fas fa-code"></i>
+                                    <i class="fa-solid fa-code"></i>
                                 </div>
                                 <div class="achievement-content">
                                     <h4 class="achievement-title">IoT Conference Philippines 2025</h4>
@@ -207,7 +207,7 @@ if (isset($db)) {
                             </div>
                             <div class="achievement-item">
                                 <div class="achievement-icon">
-                                    <i class="fas fa-certificate"></i>
+                                    <i class="fa-solid fa-certificate"></i>
                                 </div>
                                 <div class="achievement-content">
                                     <h4 class="achievement-title">Joint Humanitarian Entrepreneurship Summer Academy 2025</h4>
@@ -217,7 +217,7 @@ if (isset($db)) {
                             </div>
                             <div class="achievement-item">
                                 <div class="achievement-icon">
-                                    <i class="fas fa-trophy"></i>
+                                    <i class="fa-solid fa-trophy"></i>
                                 </div>
                                 <div class="achievement-content">
                                     <h4 class="achievement-title">Sustainability Expo 2024 Hackathon x Circular Innovation Challenge</h4>
@@ -227,7 +227,7 @@ if (isset($db)) {
                             </div>
                             <div class="achievement-item">
                                 <div class="achievement-icon">
-                                    <i class="fas fa-medal"></i>
+                                    <i class="fa-solid fa-medal"></i>
                                 </div>
                                 <div class="achievement-content">
                                     <h4 class="achievement-title">Philippine Robotics Olympiad 2022</h4>

@@ -82,10 +82,10 @@ function applyTheme(theme) {
     body.setAttribute('data-theme', theme);
     
     if (theme === 'dark') {
-        icon.className = 'fas fa-sun';
+        icon.className = 'fa-solid fa-sun';
         darkModeToggle.setAttribute('aria-label', 'Switch to light mode');
     } else {
-        icon.className = 'fas fa-moon';
+        icon.className = 'fa-solid fa-moon';
         darkModeToggle.setAttribute('aria-label', 'Switch to dark mode');
     }
 }
@@ -238,7 +238,7 @@ function downloadPDF() {
 
     const downloadBtn = document.querySelector('.btn-print');
     const originalContent = downloadBtn.innerHTML;
-    downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Preparing...</span>';
+    downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Preparing...</span>';
     downloadBtn.disabled = true;
 
     const link = document.createElement('a');
