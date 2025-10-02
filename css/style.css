@@ -38,7 +38,38 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Montserrat', sans-serif !important;
+    /* DO NOT add font-family here - it breaks Font Awesome icons */
+}
+
+/* Explicitly protect ALL icon elements */
+i,
+i[class*="fa"],
+[class*="fa-"],
+.fa,
+.fas,
+.far,
+.fab,
+.fal,
+.fad {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    text-rendering: auto !important;
+    -webkit-font-smoothing: antialiased !important;
+    display: inline-block !important;
+}
+
+/* Solid icons weight */
+.fa-solid,
+.fas {
+    font-weight: 900 !important;
+}
+
+/* Brand icons weight and font */
+.fa-brands,
+.fab {
+    font-family: "Font Awesome 6 Brands" !important;
+    font-weight: 400 !important;
 }
 
 html {
@@ -63,7 +94,7 @@ body {
     transition: all 0.3s ease;
 }
 
-/* Force Montserrat on ALL form elements */
+/* Force Montserrat on ALL form elements (but not icons inside them) */
 input,
 textarea,
 select,
@@ -71,6 +102,12 @@ button,
 option,
 optgroup {
     font-family: 'Montserrat', sans-serif !important;
+}
+
+/* But protect icons inside buttons */
+button i,
+button [class*="fa-"] {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
 }
 
 /* Force Montserrat on placeholders across all browsers */
@@ -103,9 +140,13 @@ input:-webkit-autofill:active {
     -webkit-text-fill-color: var(--text-primary) !important;
 }
 
-/* Override any inherited fonts */
+/* Override any inherited fonts - EXCLUDING icons */
 h1, h2, h3, h4, h5, h6,
-p, span, div, a, li, ul, ol,
+p, 
+span:not([class*="fa-"]),
+div:not([class*="fa-"]),
+a:not([class*="fa-"]),
+li, ul, ol,
 label, legend, fieldset {
     font-family: 'Montserrat', sans-serif !important;
 }

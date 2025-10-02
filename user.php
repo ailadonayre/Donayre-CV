@@ -74,7 +74,6 @@ class User {
                     $user = $stmt->fetch(PDO::FETCH_ASSOC);
                     
                     if (password_verify($password, $user['password_hash'])) {
-                        // Update last login
                         $updateStmt = $this->db->prepare("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?");
                         $updateStmt->execute([$user['id']]);
                         
