@@ -85,7 +85,7 @@ if (isset($db)) {
                     
                     <div class="card profile-card">
                         <div class="card-header">
-                            <span class="header-label">Welcome</span>
+                            <span class="header-label">Welcome!</span>
                         </div>
                         <div class="profile-section">
                             <div class="profile-image-container">
