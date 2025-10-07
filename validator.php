@@ -44,7 +44,7 @@ class Validator {
     }
     
     public function validateLogin($username, $password) {
-        $this->errors = []; // Reset errors
+        $this->errors = [];
         
         if (!$this->required($username, 'Username') || !$this->required($password, 'Password')) {
             return false;
