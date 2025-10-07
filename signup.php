@@ -136,8 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="auth-container">
         <form class="auth-form" method="POST" action="" id="signupForm">
             <div class="auth-header">
-                <h1 class="auth-title">Join Us!</h1>
-                <p class="auth-subtitle">Create your account to view the resume</p>
+                <h1 class="auth-title">Sign Up</h1>
             </div>
 
             <?php if ($error): ?>
