@@ -53,7 +53,7 @@ class User {
             $stmt = $this->db->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
             $stmt->execute([$this->username, $this->email, $this->passwordHash]);
             
-            return ['success' => true, 'message' => 'Registration successful'];
+            return ['success' => true, 'message' => 'Registration successful!'];
             
         } catch (PDOException $e) {
             return ['success' => false, 'message' => 'Registration failed: ' . $e->getMessage()];
@@ -62,7 +62,7 @@ class User {
     
     public function authenticate($username, $password) {
         if ($username === 'admin' && $password === '1234') {
-            return ['success' => true, 'message' => 'Login Successful', 'user' => ['username' => 'admin', 'email' => 'admin@admin.com']];
+            return ['success' => true, 'message' => 'Login successful!', 'user' => ['username' => 'admin', 'email' => 'admin@admin.com']];
         }
         
         if ($this->db) {
@@ -77,7 +77,7 @@ class User {
                         $updateStmt = $this->db->prepare("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?");
                         $updateStmt->execute([$user['id']]);
                         
-                        return ['success' => true, 'message' => 'Login Successful', 'user' => $user];
+                        return ['success' => true, 'message' => 'Login successful!', 'user' => $user];
                     }
                 }
             } catch (PDOException $e) {
@@ -85,6 +85,6 @@ class User {
             }
         }
         
-        return ['success' => false, 'message' => 'Invalid Username or Password'];
+        return ['success' => false, 'message' => 'Invalid username or password. Please try again.'];
     }
 }
