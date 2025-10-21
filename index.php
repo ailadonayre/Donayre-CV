@@ -19,11 +19,23 @@ $address = "Batangas City, Batangas, Philippines 4200";
 $age = "20";
 $profile_image = "assets/img/arcd.jpeg";
 
-if (isset($db)) {
+if (isset($currentUser) && $db) {
     try {
-        $stmt = $db->query("SELECT version()");
+        $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt->execute([$currentUser['id']]);
+        $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($userData) {
+            $name = $userData['fullname'] ?: $name;
+            $title = $userData['title'] ?: $title;
+            $email = $userData['email'] ?: $email;
+            $linkedin = $userData['linkedin'] ?: $linkedin;
+            $github = $userData['github'] ?: $github;
+            $address = $userData['address'] ?: $address;
+            $age = $userData['age'] ?: $age;
+        }
     } catch (PDOException $e) {
-        error_log("Database query failed: " . $e->getMessage());
+        error_log("Failed to load user data: " . $e->getMessage());
     }
 }
 ?>
@@ -63,6 +75,7 @@ if (isset($db)) {
                     <h2 class="title"><?php echo $title; ?></h2>
                     <?php if ($currentUser): ?>
                     <p class="user-welcome">Welcome, <strong><?php echo htmlspecialchars($currentUser['username']); ?></strong>! 
+                        <a href="edit_resume.php" class="logout-link">Edit Resume</a>
                         <a href="logout.php" class="logout-link">Log out</a>
                     </p>
                     <?php endif; ?>
