@@ -8,7 +8,12 @@ if ($userId <= 0) {
     die("Invalid user ID");
 }
 
-// Fetch resume data using parameterized query
+// Helper function for safe output
+function e($value) {
+    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+}
+
+// Fetch user data
 try {
     $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
     $stmt->execute([$userId]);
@@ -17,29 +22,53 @@ try {
     if (!$user) {
         die("Resume not found");
     }
+    
+    // Fetch social links
+    $stmt = $db->prepare("SELECT * FROM social_links WHERE user_id = ? ORDER BY display_order");
+    $stmt->execute([$userId]);
+    $socialLinks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Fetch education
+    $stmt = $db->prepare("SELECT * FROM education WHERE user_id = ? ORDER BY display_order");
+    $stmt->execute([$userId]);
+    $educations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Fetch experience with traits
+    $stmt = $db->prepare("SELECT * FROM experience WHERE user_id = ? ORDER BY display_order");
+    $stmt->execute([$userId]);
+    $experiences = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Fetch traits for each experience
+    foreach ($experiences as &$exp) {
+        $stmt = $db->prepare("SELECT * FROM experience_traits WHERE experience_id = ?");
+        $stmt->execute([$exp['id']]);
+        $exp['traits'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    // Fetch achievements
+    $stmt = $db->prepare("SELECT * FROM achievements WHERE user_id = ? ORDER BY display_order");
+    $stmt->execute([$userId]);
+    $achievements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Fetch technologies
+    $stmt = $db->prepare("SELECT * FROM tech_categories WHERE user_id = ? ORDER BY display_order");
+    $stmt->execute([$userId]);
+    $techCategories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Fetch technologies for each category
+    foreach ($techCategories as &$cat) {
+        $stmt = $db->prepare("SELECT * FROM technologies WHERE category_id = ? ORDER BY display_order");
+        $stmt->execute([$cat['id']]);
+        $cat['technologies'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
 } catch (PDOException $e) {
     die("Error loading resume: " . htmlspecialchars($e->getMessage()));
-}
-
-// Helper function for safe output
-function e($value) {
-    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
 }
 
 // Set defaults if fields are empty
 $name = e($user['fullname']) ?: 'User';
 $title = e($user['title']) ?: 'Professional';
-$email = e($user['email']);
-$contact = e($user['contact']);
-$address = e($user['address']);
-$age = e($user['age']);
-$summary = e($user['summary']);
-$skills = e($user['skills']);
-$education = e($user['education']);
-$experience = e($user['experience']);
-$linkedin = e($user['linkedin']);
-$github = e($user['github']);
-$profile_image = e($user['profile_image']) ?: 'assets/img/default-avatar.png';
 ?>
 
 <!DOCTYPE html>
@@ -86,12 +115,6 @@ $profile_image = e($user['profile_image']) ?: 'assets/img/default-avatar.png';
                             <span class="header-label">Profile</span>
                         </div>
                         <div class="profile-section">
-                            <?php if ($profile_image): ?>
-                            <div class="profile-image-container">
-                                <img src="<?php echo $profile_image; ?>" alt="<?php echo $name; ?>" class="profile-image" onerror="this.src='assets/img/default-avatar.png'">
-                            </div>
-                            <?php endif; ?>
-                            
                             <div class="profile-info">
                                 <h3><span class="name-highlight"><?php echo strtoupper($name); ?></span></h3>
                                 <?php if ($title): ?>
@@ -99,114 +122,185 @@ $profile_image = e($user['profile_image']) ?: 'assets/img/default-avatar.png';
                                 <?php endif; ?>
                                 
                                 <div class="profile-details">
-                                    <?php if ($age): ?>
+                                    <?php if ($user['age']): ?>
                                     <div class="detail-item">
                                         <span class="detail-label">Age</span>
-                                        <span class="detail-value"><?php echo $age; ?></span>
+                                        <span class="detail-value"><?php echo e($user['age']); ?></span>
                                     </div>
                                     <?php endif; ?>
                                     
-                                    <?php if ($address): ?>
+                                    <?php if ($user['address']): ?>
                                     <div class="detail-item">
                                         <span class="detail-label">Address</span>
-                                        <span class="detail-value"><?php echo $address; ?></span>
+                                        <span class="detail-value"><?php echo e($user['address']); ?></span>
                                     </div>
                                     <?php endif; ?>
                                     
-                                    <?php if ($email): ?>
+                                    <?php if ($user['email']): ?>
                                     <div class="detail-item">
                                         <span class="detail-label">Email</span>
-                                        <span class="detail-value"><?php echo $email; ?></span>
+                                        <span class="detail-value"><?php echo e($user['email']); ?></span>
                                     </div>
                                     <?php endif; ?>
                                     
-                                    <?php if ($contact): ?>
+                                    <?php if ($user['contact']): ?>
                                     <div class="detail-item">
                                         <span class="detail-label">Contact</span>
-                                        <span class="detail-value"><?php echo $contact; ?></span>
+                                        <span class="detail-value"><?php echo e($user['contact']); ?></span>
                                     </div>
                                     <?php endif; ?>
                                 </div>
                                 
-                                <?php if ($linkedin || $github): ?>
+                                <?php if (!empty($socialLinks)): ?>
                                 <div class="profile-social">
-                                    <?php if ($linkedin): ?>
-                                    <a href="<?php echo $linkedin; ?>" target="_blank" class="social-icon" rel="noopener noreferrer">
-                                        <i class="fa-brands fa-linkedin"></i>
+                                    <?php foreach ($socialLinks as $link): ?>
+                                    <a href="<?php echo e($link['url']); ?>" target="_blank" class="social-icon" rel="noopener noreferrer" title="<?php echo e($link['platform']); ?>">
+                                        <i class="fa-brands <?php echo e($link['icon']); ?>"></i>
                                     </a>
-                                    <?php endif; ?>
-                                    
-                                    <?php if ($github): ?>
-                                    <a href="<?php echo $github; ?>" target="_blank" class="social-icon" rel="noopener noreferrer">
-                                        <i class="fa-brands fa-github"></i>
-                                    </a>
-                                    <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </div>
                                 <?php endif; ?>
                             </div>
                         </div>
                     </div>
 
-                    <?php if ($summary): ?>
+                    <?php if ($user['profile_summary']): ?>
                     <!-- Summary Card -->
                     <div class="card">
                         <h3 class="card-title">ABOUT ME</h3>
                         <div class="profile-section">
-                            <p class="public-text"><?php echo nl2br($summary); ?></p>
+                            <p class="public-text"><?php echo nl2br(e($user['profile_summary'])); ?></p>
                         </div>
                     </div>
                     <?php endif; ?>
 
-                    <?php if ($skills): ?>
-                    <!-- Skills Card -->
-                    <div class="card">
-                        <h3 class="card-title">SKILLS</h3>
-                        <div class="tech-content">
-                            <div class="tech-tags">
-                                <?php
-                                $skillsArray = array_filter(array_map('trim', explode(',', $skills)));
-                                foreach ($skillsArray as $skill):
-                                ?>
-                                <span class="tech-tag"><?php echo e($skill); ?></span>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Right Column -->
-                <div class="right-column">
-                    <?php if ($education): ?>
-                    <!-- Education Card -->
-                    <div class="card education-card">
-                        <h3 class="card-title">EDUCATION</h3>
-                        <div class="timeline">
-                            <div class="timeline-item">
-                                <div class="timeline-marker"></div>
-                                <div class="timeline-content">
-                                    <p class="public-text"><?php echo nl2br($education); ?></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-
-                    <?php if ($experience): ?>
+                    <?php if (!empty($experiences)): ?>
                     <!-- Experience Card -->
                     <div class="card experience-card">
                         <h3 class="card-title">EXPERIENCE</h3>
                         <div class="experience-content">
                             <div class="experience-section">
+                                <?php foreach ($experiences as $exp): ?>
                                 <div class="experience-item">
-                                    <p class="public-text"><?php echo nl2br($experience); ?></p>
+                                    <div class="experience-header">
+                                        <h4 class="experience-title"><?php echo e($exp['job_title']); ?></h4>
+                                        <?php if ($exp['start_date'] || $exp['end_date']): ?>
+                                        <span class="experience-date"><?php echo e($exp['start_date']); ?><?php echo ($exp['start_date'] && $exp['end_date']) ? ' - ' : ''; ?><?php echo e($exp['end_date']); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if ($exp['company']): ?>
+                                    <p class="experience-company"><?php echo e($exp['company']); ?></p>
+                                    <?php endif; ?>
+                                    <?php if ($exp['description']): ?>
+                                    <p class="experience-description"><?php echo nl2br(e($exp['description'])); ?></p>
+                                    <?php endif; ?>
                                 </div>
+                                <?php endforeach; ?>
+                                
+                                <?php 
+                                // Collect all unique traits from all experiences
+                                $allTraits = [];
+                                foreach ($experiences as $exp) {
+                                    if (!empty($exp['traits'])) {
+                                        foreach ($exp['traits'] as $trait) {
+                                            $key = $trait['trait_icon'] . '|' . $trait['trait_label'];
+                                            $allTraits[$key] = $trait;
+                                        }
+                                    }
+                                }
+                                ?>
+                                
+                                <?php if (!empty($allTraits)): ?>
+                                <div class="experience-highlights">
+                                    <?php foreach ($allTraits as $trait): ?>
+                                    <div class="highlight-item">
+                                        <i class="fa-solid <?php echo e($trait['trait_icon']); ?>"></i>
+                                        <span><?php echo e($trait['trait_label']); ?></span>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
                     <?php endif; ?>
                 </div>
+                
+                <!-- Right Column -->
+                <div class="right-column">
+                    <?php if (!empty($educations)): ?>
+                    <!-- Education Card -->
+                    <div class="card education-card">
+                        <h3 class="card-title">EDUCATION</h3>
+                        <div class="timeline">
+                            <?php foreach ($educations as $edu): ?>
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <h4 class="timeline-title"><?php echo e($edu['degree']); ?></h4>
+                                    <?php if ($edu['institution']): ?>
+                                    <p class="timeline-subtitle"><?php echo e($edu['institution']); ?></p>
+                                    <?php endif; ?>
+                                    <?php if ($edu['start_date'] || $edu['end_date']): ?>
+                                    <span class="timeline-date"><?php echo e($edu['start_date']); ?><?php echo ($edu['start_date'] && $edu['end_date']) ? ' - ' : ''; ?><?php echo e($edu['end_date']); ?></span>
+                                    <?php endif; ?>
+                                    <?php if ($edu['description']): ?>
+                                    <p class="timeline-description"><?php echo nl2br(e($edu['description'])); ?></p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($achievements)): ?>
+                    <!-- Achievements Card -->
+                    <div class="card achievements-card">
+                        <h3 class="card-title">ACHIEVEMENTS</h3>
+                        <div class="achievements-list">
+                            <?php foreach ($achievements as $ach): ?>
+                            <div class="achievement-item">
+                                <div class="achievement-icon">
+                                    <i class="fa-solid <?php echo e($ach['icon']); ?>"></i>
+                                </div>
+                                <div class="achievement-content">
+                                    <h4 class="achievement-title"><?php echo e($ach['title']); ?></h4>
+                                    <?php if ($ach['description']): ?>
+                                    <p class="achievement-description"><?php echo nl2br(e($ach['description'])); ?></p>
+                                    <?php endif; ?>
+                                    <?php if ($ach['achievement_date']): ?>
+                                    <span class="achievement-date"><?php echo e($ach['achievement_date']); ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
             </div>
+
+            <?php if (!empty($techCategories)): ?>
+            <!-- Technologies Card (Full Width) -->
+            <div class="card tech-card">
+                <h3 class="card-title">TECHNOLOGIES</h3>
+                <div class="tech-content">
+                    <div class="tech-grid">
+                        <?php foreach ($techCategories as $cat): ?>
+                        <div class="tech-category">
+                            <h4><?php echo e($cat['category_name']); ?></h4>
+                            <div class="tech-tags">
+                                <?php foreach ($cat['technologies'] as $tech): ?>
+                                <span class="tech-tag"><?php echo e($tech['tech_name']); ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
     </main>
 
