@@ -159,23 +159,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
     }
 }
 
-// Load existing data for editing
+// Education
 $educationData = $db->prepare("SELECT * FROM education WHERE user_id = ? ORDER BY display_order");
 $educationData->execute([$userId]);
 $educations = $educationData->fetchAll(PDO::FETCH_ASSOC);
 
-$experienceData = $db->prepare("SELECT e.*, GROUP_CONCAT(CONCAT(et.trait_icon, '|', et.trait_label) SEPARATOR ';;') as traits FROM experience e LEFT JOIN experience_traits et ON e.id = et.experience_id WHERE e.user_id = ? GROUP BY e.id ORDER BY e.display_order");
+// Experiences: aggregate traits into "icon|label;;icon2|label2" using a correlated subquery + ordered inner select
+$experienceData = $db->prepare(
+    "SELECT e.*,
+            COALESCE(
+              (
+                SELECT STRING_AGG(val, ';;')
+                FROM (
+                  SELECT et.trait_icon || '|' || et.trait_label AS val
+                  FROM experience_traits et
+                  WHERE et.experience_id = e.id
+                  ORDER BY et.id
+                ) AS sub
+              ),
+              ''
+            ) AS traits
+     FROM experience e
+     WHERE e.user_id = ?
+     ORDER BY e.display_order"
+);
 $experienceData->execute([$userId]);
 $experiences = $experienceData->fetchAll(PDO::FETCH_ASSOC);
 
+// Achievements
 $achievementData = $db->prepare("SELECT * FROM achievements WHERE user_id = ? ORDER BY display_order");
 $achievementData->execute([$userId]);
 $achievements = $achievementData->fetchAll(PDO::FETCH_ASSOC);
 
-$techData = $db->prepare("SELECT tc.*, GROUP_CONCAT(t.tech_name ORDER BY t.display_order SEPARATOR ', ') as technologies FROM tech_categories tc LEFT JOIN technologies t ON tc.id = t.category_id WHERE tc.user_id = ? GROUP BY tc.id ORDER BY tc.display_order");
+// Tech categories with aggregated tech names (ordered)
+$techData = $db->prepare(
+    "SELECT tc.*,
+            COALESCE(
+              (
+                SELECT STRING_AGG(val, ', ')
+                FROM (
+                  SELECT t.tech_name AS val
+                  FROM technologies t
+                  WHERE t.category_id = tc.id
+                  ORDER BY t.display_order
+                ) AS sub
+              ),
+              ''
+            ) AS technologies
+     FROM tech_categories tc
+     WHERE tc.user_id = ?
+     ORDER BY tc.display_order"
+);
 $techData->execute([$userId]);
 $techCategories = $techData->fetchAll(PDO::FETCH_ASSOC);
 
+// Social links
 $socialData = $db->prepare("SELECT * FROM social_links WHERE user_id = ? ORDER BY display_order");
 $socialData->execute([$userId]);
 $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
