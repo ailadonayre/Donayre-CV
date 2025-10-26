@@ -1549,3 +1549,88 @@ button {
         padding: 6px 12px;
     }
 }
+
+/* Experience traits footer - small square boxes at bottom */
+.experience-traits-footer {
+    padding: 0 30px 20px 30px;
+    border-top: 2px solid var(--border-color);
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+.trait-boxes {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.trait-box {
+    width: 50px;
+    height: 50px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.trait-box:hover {
+    background: var(--accent-color);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(239, 35, 60, 0.3);
+}
+
+.trait-box i {
+    font-size: 1.5rem;
+    color: var(--accent-color);
+    transition: color 0.3s ease;
+}
+
+.trait-box:hover i {
+    color: var(--white);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .experience-traits-footer {
+        padding: 0 20px 15px 20px;
+        padding-top: 15px;
+    }
+    
+    .trait-boxes {
+        gap: 10px;
+    }
+    
+    .trait-box {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .trait-box i {
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .experience-traits-footer {
+        padding: 0 15px 12px 15px;
+        padding-top: 12px;
+    }
+    
+    .trait-boxes {
+        gap: 8px;
+    }
+    
+    .trait-box {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .trait-box i {
+        font-size: 1.2rem;
+    }
+}

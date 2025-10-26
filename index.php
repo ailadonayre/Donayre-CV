@@ -40,6 +40,7 @@ $userData = [];
 $socialLinks = [];
 $educations = [];
 $experiences = [];
+$experienceTraitsGlobal = [];
 $achievements = [];
 $techCategories = [];
 
@@ -69,7 +70,7 @@ try {
     $stmt->execute([$viewingUserId]);
     $experiences = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // For each experience fetch keywords (comma-independent rows)
+    // For each experience fetch keywords
     foreach ($experiences as &$exp) {
         $stmt = $db->prepare("SELECT keyword FROM experience_keywords WHERE experience_id = ? ORDER BY display_order, id");
         $stmt->execute([$exp['id']]);
@@ -88,7 +89,7 @@ try {
     $stmt->execute([$viewingUserId]);
     $achievements = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Fetch technologies - FIXED: Remove duplicates
+    // Fetch technologies
     $stmt = $db->prepare("SELECT * FROM tech_categories WHERE user_id = ? ORDER BY display_order");
     $stmt->execute([$viewingUserId]);
     $techCategories = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -99,7 +100,7 @@ try {
         $stmt->execute([$cat['id']]);
         $cat['technologies'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    unset($cat); // IMPORTANT
+    unset($cat);
     
     $hasResumeData = !empty($userData['fullname']) || 
                      !empty($educations) || 
@@ -119,18 +120,20 @@ $name = e($userData['fullname']) ?: 'User';
 $title = e($userData['title']) ?: 'Professional';
 $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
 
-// --- compute base path so links and assets work in a subfolder (e.g. /Donayre-CV)
-$scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); // gives "/Donayre-CV" when in that folder
+// Compute base path
+$scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 if ($scriptDir === '/' || $scriptDir === '.') {
     $basePath = '';
 } else {
     $basePath = $scriptDir;
 }
 
-// helper to escape values for output in href/src
 function a($value) {
     return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
 }
+
+// Set variable for template
+$user = $userData;
 ?>
 
 <!DOCTYPE html>
@@ -227,7 +230,7 @@ function a($value) {
                             <?php echo $hasResumeData ? 'Edit Resume' : 'Create Resume'; ?>
                         </a>
                         <a href="<?php echo a($basePath); ?>/public/<?php echo urlencode($userData['public_slug'] ?? $userData['username']); ?>" class="logout-link">Public View</a>
-                        <a href="logout.php" class="logout-link">Log out</a>
+                        <a href="<?php echo a($basePath); ?>/logout.php" class="logout-link">Log Out</a>
                     </p>
                     <?php endif; ?>
                 </div>
@@ -247,7 +250,7 @@ function a($value) {
                         You haven't created your resume yet. Get started by adding your education, 
                         experience, skills, and achievements to showcase your professional profile.
                     </p>
-                    <a href="edit_resume.php" class="btn-create-resume">
+                    <a href="<?php echo a($basePath); ?>/edit_resume.php" class="btn-create-resume">
                         <i class="fa-solid fa-plus"></i>
                         Create Your Resume
                     </a>
@@ -263,227 +266,10 @@ function a($value) {
                     </p>
                 </div>
             <?php else: ?>
-                <div class="content-grid">
-                    <!-- Left Column -->
-                    <div class="left-column">
-                        <!-- Profile Card - FIXED: Added spacing between name and "PROFILE" -->
-                        <div class="card profile-card">
-                            <div class="card-header">
-                                <span class="header-label">Profile</span>
-                            </div>
-                            <div class="profile-section">
-                                <div class="profile-info">
-                                    <h3 class="profile-name-title">
-                                        <span class="name-highlight"><?php echo strtoupper($name); ?></span>
-                                    </h3>
-                                    <?php if ($title): ?>
-                                    <p class="profile-subtitle"><?php echo $title; ?></p>
-                                    <?php endif; ?>
-                                    
-                                    <div class="profile-details">
-                                        <?php if ($userData['age']): ?>
-                                        <div class="detail-item">
-                                            <span class="detail-label">Age</span>
-                                            <span class="detail-value"><?php echo e($userData['age']); ?></span>
-                                        </div>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($userData['address']): ?>
-                                        <div class="detail-item">
-                                            <span class="detail-label">Address</span>
-                                            <span class="detail-value"><?php echo e($userData['address']); ?></span>
-                                        </div>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($userData['email']): ?>
-                                        <div class="detail-item">
-                                            <span class="detail-label">Email</span>
-                                            <span class="detail-value"><?php echo e($userData['email']); ?></span>
-                                        </div>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($userData['contact']): ?>
-                                        <div class="detail-item">
-                                            <span class="detail-label">Contact</span>
-                                            <span class="detail-value"><?php echo e($userData['contact']); ?></span>
-                                        </div>
-                                        <?php endif; ?>
-                                    </div>
-                                    
-                                    <?php if (!empty($socialLinks)): ?>
-                                        <div class="profile-social">
-                                            <?php foreach ($socialLinks as $link):
-                                                $icon = trim($link['icon'] ?? '');
-                                                $platform = strtolower(trim($link['platform'] ?? ''));
-
-                                                // decide which prefix to use
-                                                $brandPlatforms = ['github', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'gitlab', 'bitbucket'];
-                                                if (in_array($platform, $brandPlatforms) || strpos($icon, 'fa-brands') !== false) {
-                                                    // if stored icon already contains fa-brands or platform is a brand => use brands
-                                                    // if the DB stores just 'fa-github', keep it; otherwise ensure safe value
-                                                    $class = (strpos($icon, 'fa-') === 0) ? "fa-brands {$icon}" : "fa-brands fa-{$platform}";
-                                                } else {
-                                                    // custom/site -> solid link icon
-                                                    // If DB explicitly stored a solid icon use it, else fall back to fa-solid fa-link
-                                                    if ($icon && (strpos($icon, 'fa-link') !== false || strpos($icon, 'fa-solid') !== false)) {
-                                                        $class = (strpos($icon, 'fa-solid') === 0) ? $icon : "fa-solid {$icon}";
-                                                    } else {
-                                                        $class = 'fa-solid fa-link';
-                                                    }
-                                                }
-
-                                                // sanitize class (allow only expected characters)
-                                                $class = preg_replace('/[^a-z0-9_\-\s]/i', '', $class);
-                                            ?>
-                                                <a href="<?php echo e($link['url']); ?>" target="_blank" class="social-icon" rel="noopener noreferrer" title="<?php echo e($link['platform']); ?>">
-                                                    <i class="<?php echo e($class); ?>"></i>
-                                                </a>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- REMOVED: About Me card entirely -->
-
-                        <?php if (!empty($experiences)): ?>
-                        <!-- Experience Card - FIXED: Per-experience traits -->
-                        <div class="card experience-card">
-                            <h3 class="card-title">EXPERIENCE</h3>
-                            <div class="experience-content">
-                                <div class="experience-section">
-                                    <?php foreach ($experiences as $exp): ?>
-                                    <div class="experience-item">
-                                        <div class="experience-header">
-                                            <h4 class="experience-title"><?php echo e($exp['job_title']); ?></h4>
-                                            <?php if ($exp['start_date'] || $exp['end_date']): ?>
-                                            <span class="experience-date">
-                                                <?php echo e($exp['start_date']); ?>
-                                                <?php echo ($exp['start_date'] && $exp['end_date']) ? ' - ' : ''; ?>
-                                                <?php echo e($exp['end_date']); ?>
-                                            </span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <?php if ($exp['company']): ?>
-                                        <p class="experience-company"><?php echo e($exp['company']); ?></p>
-                                        <?php endif; ?>
-                                        <?php if ($exp['description']): ?>
-                                        <p class="experience-description"><?php echo nl2br(e($exp['description'])); ?></p>
-                                        <?php endif; ?>
-                                        <?php if (!empty($exp['keywords'])): ?>
-                                        <div class="experience-skills">
-                                            <?php foreach ($exp['keywords'] as $kw): ?>
-                                                <span class="skill-tag"><?php echo e($kw); ?></span>
-                                            <?php endforeach; ?>
-                                        </div>
-                                        <?php endif; ?>
-                                        <!-- FIXED: Show traits per experience -->
-                                        <?php if (!empty($experienceTraitsGlobal)): ?>
-                                        <div class="experience-traits-global">
-                                            <?php foreach ($experienceTraitsGlobal as $gtrait): ?>
-                                            <div class="highlight-item global">
-                                                <i class="fa-solid <?php echo e($gtrait['trait_icon']); ?>"></i>
-                                                <span><?php echo e($gtrait['trait_label']); ?></span>
-                                            </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                        <?php endif; ?>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <!-- Right Column -->
-                    <div class="right-column">
-                        <?php if (!empty($educations)): ?>
-                        <div class="card education-card">
-                            <h3 class="card-title">EDUCATION</h3>
-                            <div class="timeline">
-                                <?php foreach ($educations as $edu): ?>
-                                <div class="timeline-item">
-                                    <div class="timeline-marker"></div>
-                                    <div class="timeline-content">
-                                        <h4 class="timeline-title"><?php echo e($edu['degree']); ?></h4>
-                                        <?php if ($edu['institution']): ?>
-                                        <p class="timeline-subtitle"><?php echo e($edu['institution']); ?></p>
-                                        <?php endif; ?>
-                                        <?php if ($edu['start_date'] || $edu['end_date']): ?>
-                                        <span class="timeline-date">
-                                            <?php echo e($edu['start_date']); ?>
-                                            <?php echo ($edu['start_date'] && $edu['end_date']) ? ' - ' : ''; ?>
-                                            <?php echo e($edu['end_date']); ?>
-                                        </span>
-                                        <?php endif; ?>
-                                        <?php if ($edu['description']): ?>
-                                        <p class="timeline-description"><?php echo nl2br(e($edu['description'])); ?></p>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-
-                        <?php if (!empty($achievements)): ?>
-                        <div class="card achievements-card">
-                            <h3 class="card-title">ACHIEVEMENTS</h3>
-                            <div class="achievements-list">
-                                <?php foreach ($achievements as $ach): ?>
-                                <div class="achievement-item">
-                                    <div class="achievement-icon">
-                                        <i class="fa-solid <?php echo e($ach['icon']); ?>"></i>
-                                    </div>
-                                    <div class="achievement-content">
-                                        <h4 class="achievement-title"><?php echo e($ach['title']); ?></h4>
-                                        <?php if ($ach['description']): ?>
-                                        <p class="achievement-description"><?php echo nl2br(e($ach['description'])); ?></p>
-                                        <?php endif; ?>
-                                        <?php if ($ach['achievement_date']): ?>
-                                        <span class="achievement-date"><?php echo e($ach['achievement_date']); ?></span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-
-                <?php if (!empty($techCategories)): ?>
-                <!-- FIXED: Technologies Card - Remove duplicates, ensure Multimedia is present -->
-                <div class="card tech-card">
-                    <h3 class="card-title">TECHNOLOGIES</h3>
-                    <div class="tech-content">
-                        <div class="tech-grid">
-                            <?php foreach ($techCategories as $cat): ?>
-                            <div class="tech-category">
-                                <h4><?php echo e($cat['category_name']); ?></h4>
-                                <div class="tech-tags">
-                                    <?php 
-                                    // FIXED: Remove duplicates
-                                    $uniqueTechs = [];
-                                    foreach ($cat['technologies'] as $tech) {
-                                        $techName = $tech['tech_name'];
-                                        if (!in_array($techName, $uniqueTechs)) {
-                                            $uniqueTechs[] = $techName;
-                                            ?>
-                                            <span class="tech-tag"><?php echo e($techName); ?></span>
-                                            <?php
-                                        }
-                                    }
-                                    ?>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                </div>
-                <?php endif; ?>
+                <?php
+                // Include the shared resume template
+                include 'resume_template.php';
+                ?>
             <?php endif; ?>
         </div>
     </main>
