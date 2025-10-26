@@ -1,95 +1,110 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     initializePage();
     initializeDarkMode();
     enhanceInteractions();
     addResponsiveHandling();
     addAccessibilityFeatures();
+
+    // For edit_resume trait selector
+    if (typeof updateGlobalTraitInputs === 'function') updateGlobalTraitInputs();
 });
 
+/* ----------------------------
+   PAGE INITIALIZATION
+----------------------------- */
 function initializePage() {
+    document.body.style.transition = 'opacity 0.8s ease-in';
     document.body.style.opacity = '0';
-    setTimeout(() => {
-        document.body.style.opacity = '1';
-        document.body.style.transition = 'opacity 0.8s ease-in';
-    }, 100);
+    setTimeout(() => { document.body.style.opacity = '1'; }, 100);
 
     const profileImg = document.querySelector('.profile-image');
     if (profileImg) {
-        profileImg.addEventListener('load', function() {
-            this.style.transform = 'scale(0.8)';
-            this.style.opacity = '0';
-            setTimeout(() => {
-                this.style.transition = 'all 0.6s ease';
-                this.style.opacity = '1';
-                this.style.transform = 'scale(1)';
-            }, 300);
-        });
+        const reveal = () => {
+            profileImg.style.transition = 'all 0.6s ease';
+            profileImg.style.transform = 'scale(1)';
+            profileImg.style.opacity = '1';
+        };
+
+        profileImg.style.transform = 'scale(0.8)';
+        profileImg.style.opacity = '0';
+
+        if (profileImg.complete && profileImg.naturalWidth !== 0) {
+            setTimeout(reveal, 150);
+        } else {
+            profileImg.addEventListener('load', reveal, { once: true });
+        }
     }
 
-    const observer = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animate-visible');
-                }
-            });
-        },
-        { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
-    );
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) entry.target.classList.add('animate-visible');
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-    document.querySelectorAll('.card').forEach(card => {
-        observer.observe(card);
-    });
+    document.querySelectorAll('.card').forEach(card => observer.observe(card));
 }
 
+/* ----------------------------
+   DARK MODE
+----------------------------- */
 function initializeDarkMode() {
     const darkModeToggle = document.getElementById('darkModeToggle');
     const body = document.body;
-    
-    const savedTheme = localStorage.getItem('resume-theme') || 'light';
-    applyTheme(savedTheme);
-    
-    darkModeToggle.addEventListener('click', function(e) {
+    if (!darkModeToggle) return;
+
+    const savedTheme = localStorage.getItem('resume-theme');
+    if (savedTheme) {
+        applyTheme(savedTheme);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        applyTheme('dark');
+    } else {
+        applyTheme('light');
+    }
+
+    darkModeToggle.addEventListener('click', e => {
         e.preventDefault();
-        const currentTheme = body.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        
+        const current = body.getAttribute('data-theme') || 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
         body.style.transition = 'all 0.3s ease';
-        applyTheme(newTheme);
-        localStorage.setItem('resume-theme', newTheme);
-        
-        this.style.transform = 'rotate(360deg)';
-        setTimeout(() => {
-            this.style.transform = 'rotate(0deg)';
-        }, 300);
+        applyTheme(next);
+        localStorage.setItem('resume-theme', next);
+
+        darkModeToggle.style.transition = 'transform 0.45s ease';
+        darkModeToggle.style.transform = 'rotate(360deg)';
+        setTimeout(() => darkModeToggle.style.transform = 'rotate(0deg)', 450);
     });
 
-    if (window.matchMedia) {
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        mediaQuery.addEventListener('change', function(e) {
-            if (!localStorage.getItem('resume-theme')) {
-                applyTheme(e.matches ? 'dark' : 'light');
-            }
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq.addEventListener) {
+        mq.addEventListener('change', e => {
+            if (!localStorage.getItem('resume-theme')) applyTheme(e.matches ? 'dark' : 'light');
+        });
+    } else if (mq.addListener) {
+        mq.addListener(e => {
+            if (!localStorage.getItem('resume-theme')) applyTheme(e.matches ? 'dark' : 'light');
         });
     }
 }
 
 function applyTheme(theme) {
     const body = document.body;
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    const icon = darkModeToggle.querySelector('i');
-    
+    const toggle = document.getElementById('darkModeToggle');
+    if (!toggle) return;
+    const icon = toggle.querySelector('i');
     body.setAttribute('data-theme', theme);
-    
+
     if (theme === 'dark') {
-        icon.className = 'fa-solid fa-sun';
-        darkModeToggle.setAttribute('aria-label', 'Switch to light mode');
+        if (icon) icon.className = 'fa-solid fa-sun';
+        toggle.setAttribute('aria-label', 'Switch to light mode');
     } else {
-        icon.className = 'fa-solid fa-moon';
-        darkModeToggle.setAttribute('aria-label', 'Switch to dark mode');
+        if (icon) icon.className = 'fa-solid fa-moon';
+        toggle.setAttribute('aria-label', 'Switch to dark mode');
     }
 }
 
+/* ----------------------------
+   INTERACTIONS
+----------------------------- */
 function enhanceInteractions() {
     enhanceCards();
     enhanceButtons();
@@ -102,64 +117,48 @@ function enhanceInteractions() {
 }
 
 function enhanceCards() {
-    document.querySelectorAll('.card').forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-5px)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-        });
+    document.querySelectorAll('.card').forEach(c => {
+        c.addEventListener('mouseenter', () => c.style.transform = 'translateY(-5px)');
+        c.addEventListener('mouseleave', () => c.style.transform = 'translateY(0)');
     });
 }
 
 function enhanceButtons() {
-    const buttons = document.querySelectorAll('.btn-print, .dark-mode-toggle');
-    
-    buttons.forEach(button => {
-        button.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-2px) scale(1.05)';
-        });
-        
-        button.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-        });
-        
-        button.addEventListener('click', function(e) {
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = 'translateY(-2px) scale(1.05)';
-            }, 150);
+    const buttons = document.querySelectorAll('.dark-mode-toggle');
+    buttons.forEach(btn => {
+        btn.addEventListener('mouseenter', () => btn.style.transform = 'translateY(-2px) scale(1.05)');
+        btn.addEventListener('mouseleave', () => btn.style.transform = 'translateY(0) scale(1)');
+        btn.addEventListener('click', () => {
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(() => btn.style.transform = 'translateY(-2px) scale(1.05)', 150);
         });
     });
 }
 
 function enhanceTechTags() {
     document.querySelectorAll('.tech-tag').forEach(tag => {
-        tag.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-2px) scale(1.05)';
-            this.style.boxShadow = '0 6px 15px rgba(239, 35, 60, 0.3)';
+        tag.addEventListener('mouseenter', () => {
+            tag.style.transform = 'translateY(-2px) scale(1.05)';
+            tag.style.boxShadow = '0 6px 15px rgba(239, 35, 60, 0.18)';
         });
-        
-        tag.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
-            this.style.boxShadow = 'none';
+        tag.addEventListener('mouseleave', () => {
+            tag.style.transform = 'translateY(0) scale(1)';
+            tag.style.boxShadow = 'none';
         });
     });
 }
 
 function enhanceTimeline() {
-    document.querySelectorAll('.timeline-content').forEach(content => {
-        content.addEventListener('mouseenter', function() {
-            const marker = this.parentElement.querySelector('.timeline-marker');
+    document.querySelectorAll('.timeline-content').forEach(c => {
+        c.addEventListener('mouseenter', () => {
+            const marker = c.parentElement.querySelector('.timeline-marker');
             if (marker) {
                 marker.style.transform = 'scale(1.2)';
                 marker.style.background = '#d80032';
             }
         });
-        
-        content.addEventListener('mouseleave', function() {
-            const marker = this.parentElement.querySelector('.timeline-marker');
+        c.addEventListener('mouseleave', () => {
+            const marker = c.parentElement.querySelector('.timeline-marker');
             if (marker) {
                 marker.style.transform = 'scale(1)';
                 marker.style.background = '#ef233c';
@@ -170,106 +169,57 @@ function enhanceTimeline() {
 
 function enhanceSocialLinks() {
     document.querySelectorAll('.social-icon').forEach(link => {
-        link.addEventListener('click', function(e) {
-            const href = this.href;
-            const platform = href.includes('linkedin') ? 'LinkedIn' :
-                          href.includes('github') ? 'GitHub' :
-                          href.includes('mailto') ? 'Email' :
-                          href.includes('tel') ? 'Phone' : 'Website';
-            
-            this.style.transform = 'scale(0.9)';
-            setTimeout(() => {
-                this.style.transform = 'scale(1)';
-            }, 150);
-            
-            console.log(`Social link clicked: ${platform}`);
+        link.addEventListener('click', () => {
+            link.style.transform = 'scale(0.9)';
+            setTimeout(() => link.style.transform = 'scale(1)', 150);
         });
     });
 }
 
 function enhanceAchievements() {
     document.querySelectorAll('.achievement-item').forEach(item => {
-        item.addEventListener('mouseenter', function() {
-            const icon = this.querySelector('.achievement-icon');
-            if (icon) {
-                icon.style.transform = 'scale(1.1)';
-            }
+        item.addEventListener('mouseenter', () => {
+            const icon = item.querySelector('.achievement-icon');
+            if (icon) icon.style.transform = 'scale(1.1)';
         });
-        
-        item.addEventListener('mouseleave', function() {
-            const icon = this.querySelector('.achievement-icon');
-            if (icon) {
-                icon.style.transform = 'scale(1)';
-            }
+        item.addEventListener('mouseleave', () => {
+            const icon = item.querySelector('.achievement-icon');
+            if (icon) icon.style.transform = 'scale(1)';
         });
     });
 }
 
 function enhanceExperience() {
     document.querySelectorAll('.experience-item').forEach(item => {
-        item.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-3px)';
-        });
-        
-        item.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-        });
+        item.addEventListener('mouseenter', () => item.style.transform = 'translateY(-3px)');
+        item.addEventListener('mouseleave', () => item.style.transform = 'translateY(0)');
     });
 
     document.querySelectorAll('.highlight-item').forEach(item => {
-        item.addEventListener('mouseenter', function() {
-            const icon = this.querySelector('i');
-            if (icon) {
-                icon.style.transform = 'scale(1.2)';
-            }
+        item.addEventListener('mouseenter', () => {
+            const icon = item.querySelector('i');
+            if (icon) icon.style.transform = 'scale(1.2)';
         });
-        
-        item.addEventListener('mouseleave', function() {
-            const icon = this.querySelector('i');
-            if (icon) {
-                icon.style.transform = 'scale(1)';
-            }
+        item.addEventListener('mouseleave', () => {
+            const icon = item.querySelector('i');
+            if (icon) icon.style.transform = 'scale(1)';
         });
     });
 }
 
-function downloadPDF() {
-    const pdfPath = '/Donayre-CV/assets/pdf/Donayre_CV.pdf';
-
-    const downloadBtn = document.querySelector('.btn-print');
-    const originalContent = downloadBtn.innerHTML;
-    downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Preparing...</span>';
-    downloadBtn.disabled = true;
-
-    const link = document.createElement('a');
-    link.href = pdfPath;
-    link.download = 'Donayre_CV.pdf';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    setTimeout(() => {
-        downloadBtn.innerHTML = originalContent;
-        downloadBtn.disabled = false;
-    }, 1000);
-}
-
+/* ----------------------------
+   KEYBOARD SUPPORT
+----------------------------- */
 function addKeyboardSupport() {
-    document.addEventListener('keydown', function(e) {
-        if (e.target.matches('input, textarea, [contenteditable]')) {
-            return;
-        }
-        
-        switch(e.key.toLowerCase()) {
-            case 'p':
-                if (!e.ctrlKey && !e.metaKey) {
-                    e.preventDefault();
-                    printPDF();
-                }
-                break;
+    document.addEventListener('keydown', e => {
+        if (e.target && e.target.matches('input, textarea, [contenteditable]')) return;
+        const key = (e.key || '').toLowerCase();
+
+        switch (key) {
             case 'd':
                 e.preventDefault();
-                document.getElementById('darkModeToggle').click();
+                const toggle = document.getElementById('darkModeToggle');
+                if (toggle) toggle.click();
                 break;
             case '?':
                 if (e.shiftKey) {
@@ -279,9 +229,7 @@ function addKeyboardSupport() {
                 break;
             case 'escape':
                 const tooltip = document.querySelector('.custom-tooltip');
-                if (tooltip) {
-                    tooltip.remove();
-                }
+                if (tooltip) tooltip.remove();
                 break;
         }
     });
@@ -289,26 +237,27 @@ function addKeyboardSupport() {
 
 function showKeyboardShortcuts() {
     const shortcuts = [
-        { key: 'P', action: 'Print CV' },
         { key: 'D', action: 'Toggle dark mode' },
         { key: 'ESC', action: 'Hide tooltips' },
         { key: '?', action: 'Show this help' }
     ];
-    
-    const helpText = 'Keyboard Shortcuts:\n' + shortcuts.map(s => `${s.key}: ${s.action}`).join('\n');
+
+    const helpText = 'Keyboard Shortcuts:\n' +
+        shortcuts.map(s => `${s.key}: ${s.action}`).join('\n');
     showTooltip(helpText, 4000);
 }
 
+/* ----------------------------
+   TOOLTIP + ACCESSIBILITY
+----------------------------- */
 function showTooltip(message, duration = 2000) {
-    const existingTooltip = document.querySelector('.custom-tooltip');
-    if (existingTooltip) {
-        existingTooltip.remove();
-    }
-    
-    const tooltip = document.createElement('div');
-    tooltip.className = 'custom-tooltip';
-    tooltip.textContent = message;
-    tooltip.style.cssText = `
+    const existing = document.querySelector('.custom-tooltip');
+    if (existing) existing.remove();
+
+    const tip = document.createElement('div');
+    tip.className = 'custom-tooltip';
+    tip.textContent = message;
+    tip.style.cssText = `
         position: fixed;
         top: 20px;
         left: 50%;
@@ -327,100 +276,105 @@ function showTooltip(message, duration = 2000) {
         white-space: pre-line;
         border: 1px solid #ef233c;
     `;
-    
-    document.body.appendChild(tooltip);
-    
+
+    document.body.appendChild(tip);
     setTimeout(() => {
-        tooltip.style.animation = 'tooltipSlide 0.3s ease reverse forwards';
-        setTimeout(() => {
-            if (tooltip && tooltip.parentNode) {
-                tooltip.remove();
-            }
-        }, 300);
+        tip.style.animation = 'tooltipSlide 0.3s ease reverse forwards';
+        setTimeout(() => tip.remove(), 300);
     }, duration);
 }
 
-function addResponsiveHandling() {
-    let resizeTimer;
-    
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(handleResize, 250);
-    });
-    
-    function handleResize() {
-        const isMobile = window.innerWidth <= 768;
-        
-        if (isMobile) {
-            document.querySelectorAll('.card').forEach(card => {
-                card.style.transform = 'none';
-            });
-        }
-        
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        if (window.innerWidth <= 480) {
-            darkModeToggle.style.width = '40px';
-            darkModeToggle.style.height = '40px';
-            darkModeToggle.style.fontSize = '1rem';
-        } else {
-            darkModeToggle.style.width = '50px';
-            darkModeToggle.style.height = '50px';
-            darkModeToggle.style.fontSize = '1.2rem';
-        }
-    }
-    
-    handleResize();
-}
-
 function addAccessibilityFeatures() {
-    const focusableElements = document.querySelectorAll(
+    document.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    
-    focusableElements.forEach(element => {
-        element.addEventListener('focus', function() {
-            this.style.outline = '3px solid #ef233c';
-            this.style.outlineOffset = '2px';
+    ).forEach(el => {
+        el.addEventListener('focus', () => {
+            el.style.outline = '3px solid #ef233c';
+            el.style.outlineOffset = '2px';
         });
-        
-        element.addEventListener('blur', function() {
-            this.style.outline = 'none';
-        });
+        el.addEventListener('blur', () => el.style.outline = 'none');
     });
-    
+
     document.querySelectorAll('.tech-tag').forEach(tag => {
         tag.setAttribute('role', 'button');
         tag.setAttribute('tabindex', '0');
         tag.setAttribute('aria-label', `Technology: ${tag.textContent}`);
     });
-    
-    document.querySelectorAll('.tech-tag').forEach(element => {
-        element.addEventListener('keydown', function(e) {
+
+    document.querySelectorAll('.tech-tag').forEach(el => {
+        el.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                this.click();
+                el.click();
             }
         });
     });
 }
 
+/* ----------------------------
+   RESPONSIVENESS
+----------------------------- */
+function addResponsiveHandling() {
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(handleResize, 250);
+    });
+    handleResize();
+
+    function handleResize() {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            document.querySelectorAll('.card').forEach(c => c.style.transform = 'none');
+        }
+
+        const toggle = document.getElementById('darkModeToggle');
+        if (toggle) {
+            if (window.innerWidth <= 480) {
+                toggle.style.width = '40px';
+                toggle.style.height = '40px';
+                toggle.style.fontSize = '1rem';
+            } else {
+                toggle.style.width = '50px';
+                toggle.style.height = '50px';
+                toggle.style.fontSize = '1.2rem';
+            }
+        }
+    }
+}
+
+/* Tooltip animation */
 const style = document.createElement('style');
 style.textContent = `
     @keyframes tooltipSlide {
-        from {
-            opacity: 0;
-            transform: translateX(-50%) translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
+        from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 `;
 document.head.appendChild(style);
 
+/* Expose minimal utilities */
 window.ResumeUtils = {
-    printPDF,
     showTooltip,
     applyTheme
 };
+
+/* Trait helper for edit_resume.php */
+function toggleGlobalTrait(el) {
+    if (!el) return;
+    el.classList.toggle('selected');
+    updateGlobalTraitInputs();
+}
+
+function updateGlobalTraitInputs() {
+    const container = document.getElementById('experience-traits-global-inputs');
+    if (!container) return;
+    container.innerHTML = '';
+    document.querySelectorAll('#experience-traits-global .trait-option.selected').forEach(opt => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'experience_traits_global[]';
+        input.value = opt.dataset.value;
+        container.appendChild(input);
+    });
+}

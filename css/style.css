@@ -325,6 +325,13 @@ label, legend, fieldset {
     position: relative;
 }
 
+/* FIXED: Profile name and title spacing */
+.profile-name-title {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+}
+
 .profile-section {
     padding: 0 30px 30px 30px;
 }
@@ -369,7 +376,9 @@ label, legend, fieldset {
     margin-bottom: 25px;
 }
 
+/* Ensure proper spacing between elements in profile card */
 .profile-details {
+    margin-top: 20px;
     margin-bottom: 25px;
 }
 
@@ -465,6 +474,7 @@ label, legend, fieldset {
     font-size: 1.1rem;
 }
 
+/* Technology card: ensure no duplicates visually */
 .tech-tags {
     display: flex;
     flex-wrap: wrap;
@@ -481,6 +491,7 @@ label, legend, fieldset {
     font-weight: 500;
     transition: all 0.3s ease;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .tech-tag:hover {
@@ -597,12 +608,53 @@ label, legend, fieldset {
     gap: 25px;
 }
 
+/* Ensure each experience item is clearly separated */
 .experience-item {
     background: var(--bg-secondary);
     padding: 20px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
     transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+/* Make keyword pills match .experience-date sizing but always red */
+.experience-highlights {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.experience-highlights .highlight-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 4px 2px 0;
+}
+
+/* the text element (your current markup has a <span>) */
+.experience-highlights .highlight-item span,
+.experience-highlights .highlight-item .kw-pill {
+    background: #e63946;         /* fixed red */
+    color: #ffffff;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-block;
+    line-height: 1;
+}
+
+/* ensure it's red in dark mode too */
+[data-theme="dark"] .experience-highlights .highlight-item span,
+[data-theme="dark"] .experience-highlights .highlight-item .kw-pill {
+    background: #e63946;
+    color: #fff;
+}
+
+.experience-item:last-child {
+    margin-bottom: 0;
 }
 
 .experience-item:hover {
@@ -671,12 +723,15 @@ label, legend, fieldset {
     font-weight: 500;
 }
 
+/* Experience highlights per-experience styling */
 .experience-highlights {
     display: flex;
-    justify-content: center;
-    gap: 20px;
+    justify-content: flex-start;
+    gap: 10px;
     flex-wrap: wrap;
-    margin-top: 20px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
 }
 
 .highlight-item {
@@ -939,6 +994,10 @@ label, legend, fieldset {
     .profile-section {
         padding: 0 20px 20px 20px;
     }
+
+    .profile-name-title {
+        font-size: 1.1rem;
+    }
     
     .profile-image {
         width: 120px;
@@ -980,9 +1039,7 @@ label, legend, fieldset {
     }
     
     .experience-highlights {
-        flex-direction: column;
-        align-items: center;
-        gap: 15px;
+        justify-content: center;
     }
     
     .highlight-item {
@@ -1233,6 +1290,7 @@ a:focus,
     font-weight: 500;
 }
 
+/* Public view link button styling */
 .logout-link {
     color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
@@ -1242,6 +1300,7 @@ a:focus,
     transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.3);
     margin-left: 10px;
+    display: inline-block;
 }
 
 .logout-link:hover {

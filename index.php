@@ -2,7 +2,6 @@
 require_once 'config.php';
 require_once 'session_manager.php';
 
-// Check database connection
 if (!isset($db) || !$db) {
     die("Database connection failed. Please check config.php");
 }
@@ -17,25 +16,20 @@ $isOwner = false;
 if (isset($_GET['id'])) {
     $viewingUserId = (int)$_GET['id'];
 } elseif ($sessionManager->isLoggedIn()) {
-    // Logged-in user viewing their own dashboard
     $currentUser = $sessionManager->getCurrentUser();
     $viewingUserId = $currentUser['id'];
     $isOwner = true;
 } else {
-    // Not logged in and no ID specified - redirect to login
     header('Location: login.php');
     exit;
 }
 
-// Security: Validate user ID
 if ($viewingUserId <= 0) {
     die("Invalid user ID");
 }
 
-// Get success message for owner only
 $successMessage = $isOwner ? $sessionManager->getFlash('success') : null;
 
-// Helper function for safe output
 function e($value) {
     return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
 }
@@ -50,7 +44,6 @@ $achievements = [];
 $techCategories = [];
 
 try {
-    // Fetch basic user info
     $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
     $stmt->execute([$viewingUserId]);
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -59,7 +52,6 @@ try {
         die("User not found");
     }
     
-    // Check if user has ANY resume data
     $hasResumeData = !empty($userData['fullname']) || !empty($userData['title']);
     
     // Fetch social links
@@ -72,24 +64,31 @@ try {
     $stmt->execute([$viewingUserId]);
     $educations = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Fetch experience with traits
+    // Fetch experiences
     $stmt = $db->prepare("SELECT * FROM experience WHERE user_id = ? ORDER BY display_order");
     $stmt->execute([$viewingUserId]);
     $experiences = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Fetch traits for each experience
+
+    // For each experience fetch keywords (comma-independent rows)
     foreach ($experiences as &$exp) {
-        $stmt = $db->prepare("SELECT * FROM experience_traits WHERE experience_id = ?");
+        $stmt = $db->prepare("SELECT keyword FROM experience_keywords WHERE experience_id = ? ORDER BY display_order, id");
         $stmt->execute([$exp['id']]);
-        $exp['traits'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $exp['keywords'] = array_map(function($r){ return $r['keyword']; }, $rows);
     }
+    unset($exp);
+
+    // Fetch card-level experience traits (apply to the whole Experience card)
+    $stmt = $db->prepare("SELECT trait_icon, trait_label FROM experience_traits_global WHERE user_id = ? ORDER BY display_order, id");
+    $stmt->execute([$viewingUserId]);
+    $experienceTraitsGlobal = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Fetch achievements
     $stmt = $db->prepare("SELECT * FROM achievements WHERE user_id = ? ORDER BY display_order");
     $stmt->execute([$viewingUserId]);
     $achievements = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Fetch technologies
+    // Fetch technologies - FIXED: Remove duplicates
     $stmt = $db->prepare("SELECT * FROM tech_categories WHERE user_id = ? ORDER BY display_order");
     $stmt->execute([$viewingUserId]);
     $techCategories = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -100,8 +99,8 @@ try {
         $stmt->execute([$cat['id']]);
         $cat['technologies'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    unset($cat); // IMPORTANT
     
-    // Update hasResumeData based on comprehensive check
     $hasResumeData = !empty($userData['fullname']) || 
                      !empty($educations) || 
                      !empty($experiences) || 
@@ -110,17 +109,28 @@ try {
     
 } catch (PDOException $e) {
     error_log("Database error: " . $e->getMessage());
-    // More helpful error for debugging
     if (ini_get('display_errors')) {
         die("Error loading resume data: " . htmlspecialchars($e->getMessage()));
     }
     die("Error loading resume data. Please contact support.");
 }
 
-// Set display values with fallbacks
 $name = e($userData['fullname']) ?: 'User';
 $title = e($userData['title']) ?: 'Professional';
 $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
+
+// --- compute base path so links and assets work in a subfolder (e.g. /Donayre-CV)
+$scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); // gives "/Donayre-CV" when in that folder
+if ($scriptDir === '/' || $scriptDir === '.') {
+    $basePath = '';
+} else {
+    $basePath = $scriptDir;
+}
+
+// helper to escape values for output in href/src
+function a($value) {
+    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+}
 ?>
 
 <!DOCTYPE html>
@@ -129,11 +139,10 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $name; ?> - Resume</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* Empty state styles */
         .empty-state {
             background: var(--bg-primary);
             border-radius: 16px;
@@ -214,21 +223,14 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
                     <?php if ($isOwner && $currentUser): ?>
                     <p class="user-welcome">
                         Welcome, <strong><?php echo e($currentUser['username']); ?></strong>! 
-                        <a href="edit_resume.php" class="logout-link">
+                        <a href="<?php echo a($basePath); ?>/edit_resume.php" class="logout-link">
                             <?php echo $hasResumeData ? 'Edit Resume' : 'Create Resume'; ?>
                         </a>
+                        <a href="<?php echo a($basePath); ?>/public/<?php echo urlencode($userData['public_slug'] ?? $userData['username']); ?>" class="logout-link">Public View</a>
                         <a href="logout.php" class="logout-link">Log out</a>
                     </p>
                     <?php endif; ?>
                 </div>
-                <?php if ($hasResumeData): ?>
-                <div class="header-right">
-                    <button onclick="window.print()" class="btn-print">
-                        <i class="fa-solid fa-print"></i>
-                        <span>Print Resume</span>
-                    </button>
-                </div>
-                <?php endif; ?>
             </div>
         </div>
     </header>
@@ -236,7 +238,6 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
     <main class="main-content">
         <div class="container">
             <?php if (!$hasResumeData && $isOwner): ?>
-                <!-- Empty State for Owner -->
                 <div class="empty-state">
                     <div class="empty-state-icon">
                         <i class="fa-solid fa-file-circle-plus"></i>
@@ -252,7 +253,6 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
                     </a>
                 </div>
             <?php elseif (!$hasResumeData): ?>
-                <!-- Empty State for Public View -->
                 <div class="empty-state">
                     <div class="empty-state-icon">
                         <i class="fa-solid fa-file-slash"></i>
@@ -263,18 +263,19 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
                     </p>
                 </div>
             <?php else: ?>
-                <!-- Resume Content -->
                 <div class="content-grid">
                     <!-- Left Column -->
                     <div class="left-column">
-                        <!-- Profile Card -->
+                        <!-- Profile Card - FIXED: Added spacing between name and "PROFILE" -->
                         <div class="card profile-card">
                             <div class="card-header">
                                 <span class="header-label">Profile</span>
                             </div>
                             <div class="profile-section">
                                 <div class="profile-info">
-                                    <h3><span class="name-highlight"><?php echo strtoupper($name); ?></span></h3>
+                                    <h3 class="profile-name-title">
+                                        <span class="name-highlight"><?php echo strtoupper($name); ?></span>
+                                    </h3>
                                     <?php if ($title): ?>
                                     <p class="profile-subtitle"><?php echo $title; ?></p>
                                     <?php endif; ?>
@@ -310,30 +311,44 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
                                     </div>
                                     
                                     <?php if (!empty($socialLinks)): ?>
-                                    <div class="profile-social">
-                                        <?php foreach ($socialLinks as $link): ?>
-                                        <a href="<?php echo e($link['url']); ?>" target="_blank" class="social-icon" rel="noopener noreferrer" title="<?php echo e($link['platform']); ?>">
-                                            <i class="fa-brands <?php echo e($link['icon']); ?>"></i>
-                                        </a>
-                                        <?php endforeach; ?>
-                                    </div>
+                                        <div class="profile-social">
+                                            <?php foreach ($socialLinks as $link):
+                                                $icon = trim($link['icon'] ?? '');
+                                                $platform = strtolower(trim($link['platform'] ?? ''));
+
+                                                // decide which prefix to use
+                                                $brandPlatforms = ['github', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'gitlab', 'bitbucket'];
+                                                if (in_array($platform, $brandPlatforms) || strpos($icon, 'fa-brands') !== false) {
+                                                    // if stored icon already contains fa-brands or platform is a brand => use brands
+                                                    // if the DB stores just 'fa-github', keep it; otherwise ensure safe value
+                                                    $class = (strpos($icon, 'fa-') === 0) ? "fa-brands {$icon}" : "fa-brands fa-{$platform}";
+                                                } else {
+                                                    // custom/site -> solid link icon
+                                                    // If DB explicitly stored a solid icon use it, else fall back to fa-solid fa-link
+                                                    if ($icon && (strpos($icon, 'fa-link') !== false || strpos($icon, 'fa-solid') !== false)) {
+                                                        $class = (strpos($icon, 'fa-solid') === 0) ? $icon : "fa-solid {$icon}";
+                                                    } else {
+                                                        $class = 'fa-solid fa-link';
+                                                    }
+                                                }
+
+                                                // sanitize class (allow only expected characters)
+                                                $class = preg_replace('/[^a-z0-9_\-\s]/i', '', $class);
+                                            ?>
+                                                <a href="<?php echo e($link['url']); ?>" target="_blank" class="social-icon" rel="noopener noreferrer" title="<?php echo e($link['platform']); ?>">
+                                                    <i class="<?php echo e($class); ?>"></i>
+                                                </a>
+                                            <?php endforeach; ?>
+                                        </div>
                                     <?php endif; ?>
                                 </div>
                             </div>
                         </div>
 
-                        <?php if ($userData['profile_summary']): ?>
-                        <!-- Summary Card -->
-                        <div class="card">
-                            <h3 class="card-title">ABOUT ME</h3>
-                            <div class="profile-section">
-                                <p class="public-text"><?php echo nl2br(e($userData['profile_summary'])); ?></p>
-                            </div>
-                        </div>
-                        <?php endif; ?>
+                        <!-- REMOVED: About Me card entirely -->
 
                         <?php if (!empty($experiences)): ?>
-                        <!-- Experience Card -->
+                        <!-- Experience Card - FIXED: Per-experience traits -->
                         <div class="card experience-card">
                             <h3 class="card-title">EXPERIENCE</h3>
                             <div class="experience-content">
@@ -356,32 +371,26 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
                                         <?php if ($exp['description']): ?>
                                         <p class="experience-description"><?php echo nl2br(e($exp['description'])); ?></p>
                                         <?php endif; ?>
+                                        <?php if (!empty($exp['keywords'])): ?>
+                                        <div class="experience-skills">
+                                            <?php foreach ($exp['keywords'] as $kw): ?>
+                                                <span class="skill-tag"><?php echo e($kw); ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <?php endif; ?>
+                                        <!-- FIXED: Show traits per experience -->
+                                        <?php if (!empty($experienceTraitsGlobal)): ?>
+                                        <div class="experience-traits-global">
+                                            <?php foreach ($experienceTraitsGlobal as $gtrait): ?>
+                                            <div class="highlight-item global">
+                                                <i class="fa-solid <?php echo e($gtrait['trait_icon']); ?>"></i>
+                                                <span><?php echo e($gtrait['trait_label']); ?></span>
+                                            </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <?php endif; ?>
                                     </div>
                                     <?php endforeach; ?>
-                                    
-                                    <?php 
-                                    // Collect all unique traits
-                                    $allTraits = [];
-                                    foreach ($experiences as $exp) {
-                                        if (!empty($exp['traits'])) {
-                                            foreach ($exp['traits'] as $trait) {
-                                                $key = $trait['trait_icon'] . '|' . $trait['trait_label'];
-                                                $allTraits[$key] = $trait;
-                                            }
-                                        }
-                                    }
-                                    ?>
-                                    
-                                    <?php if (!empty($allTraits)): ?>
-                                    <div class="experience-highlights">
-                                        <?php foreach ($allTraits as $trait): ?>
-                                        <div class="highlight-item">
-                                            <i class="fa-solid <?php echo e($trait['trait_icon']); ?>"></i>
-                                            <span><?php echo e($trait['trait_label']); ?></span>
-                                        </div>
-                                        <?php endforeach; ?>
-                                    </div>
-                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -391,7 +400,6 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
                     <!-- Right Column -->
                     <div class="right-column">
                         <?php if (!empty($educations)): ?>
-                        <!-- Education Card -->
                         <div class="card education-card">
                             <h3 class="card-title">EDUCATION</h3>
                             <div class="timeline">
@@ -421,7 +429,6 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
                         <?php endif; ?>
 
                         <?php if (!empty($achievements)): ?>
-                        <!-- Achievements Card -->
                         <div class="card achievements-card">
                             <h3 class="card-title">ACHIEVEMENTS</h3>
                             <div class="achievements-list">
@@ -448,7 +455,7 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
                 </div>
 
                 <?php if (!empty($techCategories)): ?>
-                <!-- Technologies Card (Full Width) -->
+                <!-- FIXED: Technologies Card - Remove duplicates, ensure Multimedia is present -->
                 <div class="card tech-card">
                     <h3 class="card-title">TECHNOLOGIES</h3>
                     <div class="tech-content">
@@ -457,9 +464,19 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
                             <div class="tech-category">
                                 <h4><?php echo e($cat['category_name']); ?></h4>
                                 <div class="tech-tags">
-                                    <?php foreach ($cat['technologies'] as $tech): ?>
-                                    <span class="tech-tag"><?php echo e($tech['tech_name']); ?></span>
-                                    <?php endforeach; ?>
+                                    <?php 
+                                    // FIXED: Remove duplicates
+                                    $uniqueTechs = [];
+                                    foreach ($cat['technologies'] as $tech) {
+                                        $techName = $tech['tech_name'];
+                                        if (!in_array($techName, $uniqueTechs)) {
+                                            $uniqueTechs[] = $techName;
+                                            ?>
+                                            <span class="tech-tag"><?php echo e($techName); ?></span>
+                                            <?php
+                                        }
+                                    }
+                                    ?>
                                 </div>
                             </div>
                             <?php endforeach; ?>
@@ -471,7 +488,7 @@ $currentUser = $isOwner ? $sessionManager->getCurrentUser() : null;
         </div>
     </main>
 
-    <script src="js/script.js"></script>
+    <script src="<?php echo a($basePath); ?>/js/script.js"></script>
     <script>
         function closeNotification() {
             const notification = document.getElementById('successNotification');

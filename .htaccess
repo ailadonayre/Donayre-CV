@@ -1,0 +1,26 @@
+# .htaccess for app in C:/xampp/htdocs/Donayre-CV
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # IMPORTANT: set RewriteBase to your project folder path on localhost
+    RewriteBase /Donayre-CV/
+
+    # If the request maps to an actual file or directory, serve it directly
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Map /Donayre-CV/public/username  -> public.php?u=username
+    RewriteRule ^public/([A-Za-z0-9_-]+)/?$ public.php?u=$1 [L,QSA]
+
+    # Optional fallback: route other clean URLs to index.php?route=...
+    RewriteRule ^(.*)$ index.php?route=$1 [L,QSA]
+</IfModule>
+
+# Deny access to sensitive files
+<FilesMatch "(\.env|\.sql|\.git|config\.php|composer\.json|package\.json)">
+    Require all denied
+</FilesMatch>
+
+# Prevent directory listing
+Options -Indexes

@@ -25,8 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
     try {
         $db->beginTransaction();
         
-        // Update basic personal information
-        $stmt = $db->prepare("UPDATE users SET fullname = ?, title = ?, email = ?, contact = ?, address = ?, age = ?, profile_summary = ? WHERE id = ?");
+        // Update basic personal information (removed profile_summary)
+        $stmt = $db->prepare("UPDATE users SET fullname = ?, title = ?, email = ?, contact = ?, address = ?, age = ? WHERE id = ?");
         $stmt->execute([
             trim($_POST['fullname']),
             trim($_POST['title']),
@@ -34,7 +34,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
             trim($_POST['contact']),
             trim($_POST['address']),
             trim($_POST['age']),
-            trim($_POST['summary']),
             $userId
         ]);
         
@@ -75,9 +74,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
             }
         }
         
-        // Handle Experience
+        // Handle Experience (delete old experiences and keywords via cascade)
         $db->prepare("DELETE FROM experience WHERE user_id = ?")->execute([$userId]);
-        
+        // (experience_keywords will be deleted because of ON DELETE CASCADE on experience)
+
         if (isset($_POST['experience_title'])) {
             foreach ($_POST['experience_title'] as $index => $title) {
                 if (!empty(trim($title))) {
@@ -94,12 +94,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                     
                     $expId = $db->lastInsertId();
                     
-                    // Handle Experience Traits
-                    if (isset($_POST['experience_traits'][$index]) && is_array($_POST['experience_traits'][$index])) {
-                        foreach ($_POST['experience_traits'][$index] as $trait) {
-                            list($icon, $label) = explode('|', $trait);
-                            $stmt = $db->prepare("INSERT INTO experience_traits (experience_id, trait_icon, trait_label) VALUES (?, ?, ?)");
-                            $stmt->execute([$expId, $icon, $label]);
+                    // Save per-experience keywords from a comma-separated input (experience_keywords[])
+                    if (isset($_POST['experience_keywords'][$index])) {
+                        $raw = trim($_POST['experience_keywords'][$index]);
+                        if ($raw !== '') {
+                            // split by comma and clean
+                            $parts = array_filter(array_map('trim', explode(',', $raw)));
+                            $kOrder = 0;
+                            $insertKw = $db->prepare("INSERT INTO experience_keywords (experience_id, keyword, display_order) VALUES (?, ?, ?)");
+                            foreach ($parts as $kw) {
+                                if ($kw === '') continue;
+                                $insertKw->execute([$expId, $kw, $kOrder++]);
+                            }
                         }
                     }
                 }
@@ -137,20 +143,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                     $catId = $db->lastInsertId();
                     
                     if (isset($_POST['tech_items'][$index])) {
+                        // FIXED: Remove duplicates before saving
                         $technologies = array_filter(array_map('trim', explode(',', $_POST['tech_items'][$index])));
+                        $technologies = array_unique($technologies); // Remove duplicates
                         $techOrder = 0;
                         foreach ($technologies as $tech) {
-                            $stmt = $db->prepare("INSERT INTO technologies (category_id, tech_name, display_order) VALUES (?, ?, ?)");
-                            $stmt->execute([$catId, $tech, $techOrder++]);
+                            if (!empty($tech)) {
+                                $stmt = $db->prepare("INSERT INTO technologies (category_id, tech_name, display_order) VALUES (?, ?, ?)");
+                                $stmt->execute([$catId, $tech, $techOrder++]);
+                            }
                         }
                     }
                 }
             }
         }
+
+        // Handle Experience Traits (card-level) - store per user
+        $db->prepare("DELETE FROM experience_traits_global WHERE user_id = ?")->execute([$userId]);
+
+        if (!empty($_POST['experience_traits_global']) && is_array($_POST['experience_traits_global'])) {
+            $insertG = $db->prepare("INSERT INTO experience_traits_global (user_id, trait_icon, trait_label, display_order) VALUES (?, ?, ?, ?)");
+            $gOrder = 0;
+            foreach ($_POST['experience_traits_global'] as $g) {
+                // expected format 'icon|label' like 'fa-code|Problem Solving'
+                if (trim($g) === '') continue;
+                $parts = explode('|', $g, 2);
+                $icon = trim($parts[0] ?? '');
+                $label = trim($parts[1] ?? '');
+                if ($label === '') continue;
+                $insertG->execute([$userId, $icon, $label, $gOrder++]);
+            }
+        }
         
         $db->commit();
+        
+        // FIXED: Redirect to home first, not directly to public view
         $sessionManager->setFlash('success', 'Resume updated successfully!');
-        header("Location: public_resume.php?id=$userId");
+        header("Location: index.php");
         exit;
         
     } catch (PDOException $e) {
@@ -159,61 +188,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
     }
 }
 
-// Education
+// Fetch existing data for form
 $educationData = $db->prepare("SELECT * FROM education WHERE user_id = ? ORDER BY display_order");
 $educationData->execute([$userId]);
 $educations = $educationData->fetchAll(PDO::FETCH_ASSOC);
 
-// Experiences: aggregate traits into "icon|label;;icon2|label2" using a correlated subquery + ordered inner select
-$experienceData = $db->prepare(
-    "SELECT e.*,
-            COALESCE(
-              (
-                SELECT STRING_AGG(val, ';;')
-                FROM (
-                  SELECT et.trait_icon || '|' || et.trait_label AS val
-                  FROM experience_traits et
-                  WHERE et.experience_id = e.id
-                  ORDER BY et.id
-                ) AS sub
-              ),
-              ''
-            ) AS traits
-     FROM experience e
-     WHERE e.user_id = ?
-     ORDER BY e.display_order"
-);
+// Fetch experiences
+$experienceData = $db->prepare("SELECT * FROM experience WHERE user_id = ? ORDER BY display_order");
 $experienceData->execute([$userId]);
 $experiences = $experienceData->fetchAll(PDO::FETCH_ASSOC);
 
-// Achievements
+// Fetch keywords for each experience
+foreach ($experiences as &$exp) {
+    $stmt = $db->prepare("SELECT keyword FROM experience_keywords WHERE experience_id = ? ORDER BY display_order, id");
+    $stmt->execute([$exp['id']]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $exp['keywords'] = array_map(function($r){ return $r['keyword']; }, $rows);
+}
+unset($exp);
+
+// Fetch existing card-level traits to prefill selector
+$gStmt = $db->prepare("SELECT trait_icon, trait_label FROM experience_traits_global WHERE user_id = ? ORDER BY display_order, id");
+$gStmt->execute([$userId]);
+$existingGlobalTraits = $gStmt->fetchAll(PDO::FETCH_ASSOC);
+
 $achievementData = $db->prepare("SELECT * FROM achievements WHERE user_id = ? ORDER BY display_order");
 $achievementData->execute([$userId]);
 $achievements = $achievementData->fetchAll(PDO::FETCH_ASSOC);
 
-// Tech categories with aggregated tech names (ordered)
-$techData = $db->prepare(
-    "SELECT tc.*,
-            COALESCE(
-              (
-                SELECT STRING_AGG(val, ', ')
-                FROM (
-                  SELECT t.tech_name AS val
-                  FROM technologies t
-                  WHERE t.category_id = tc.id
-                  ORDER BY t.display_order
-                ) AS sub
-              ),
-              ''
-            ) AS technologies
-     FROM tech_categories tc
-     WHERE tc.user_id = ?
-     ORDER BY tc.display_order"
-);
+$techData = $db->prepare("SELECT * FROM tech_categories WHERE user_id = ? ORDER BY display_order");
 $techData->execute([$userId]);
 $techCategories = $techData->fetchAll(PDO::FETCH_ASSOC);
 
-// Social links
+// Fetch technologies for each category
+foreach ($techCategories as &$cat) {
+    $stmt = $db->prepare("SELECT * FROM technologies WHERE category_id = ? ORDER BY display_order");
+    $stmt->execute([$cat['id']]);
+    $cat['technologies'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+unset($cat); // IMPORTANT: break the reference
+
 $socialData = $db->prepare("SELECT * FROM social_links WHERE user_id = ? ORDER BY display_order");
 $socialData->execute([$userId]);
 $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
@@ -252,7 +266,9 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                     <h2 class="title">Update Your Information</h2>
                     <p class="user-welcome">
                         Editing as <strong><?php echo htmlspecialchars($currentUser['username']); ?></strong>
-                        <a href="public_resume.php?id=<?php echo $userId; ?>" class="logout-link">View Resume</a>
+                        <!-- FIXED: Public View button now beside other actions -->
+                        <a href="/public/<?php echo htmlspecialchars($userData['public_slug'] ?? $userData['username']); ?>" class="logout-link">Public View</a>
+                        <a href="index.php" class="logout-link">Home</a>
                         <a href="logout.php" class="logout-link">Log out</a>
                     </p>
                 </div>
@@ -270,7 +286,7 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                     <div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> <?php echo htmlspecialchars($success); ?></div>
                 <?php endif; ?>
 
-                <form method="POST" class="resume-form">
+                <form method="POST" class="resume-form" id="resumeForm">
                     <!-- Personal Information -->
                     <div class="form-section">
                         <h3 class="section-title"><i class="fa-solid fa-user"></i> Personal Information</h3>
@@ -304,10 +320,6 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                                 <input type="text" name="address" class="form-input" value="<?php echo htmlspecialchars($userData['address'] ?? ''); ?>">
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Summary</label>
-                            <textarea name="summary" class="form-textarea" rows="4"><?php echo htmlspecialchars($userData['profile_summary'] ?? ''); ?></textarea>
-                        </div>
                     </div>
 
                     <!-- Social Links -->
@@ -329,9 +341,9 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
 
-                    <!-- Education (At least 1 required) -->
+                    <!-- Education -->
                     <div class="form-section">
-                        <h3 class="section-title"><i class="fa-solid fa-graduation-cap"></i> Education (At least 1)</h3>
+                        <h3 class="section-title"><i class="fa-solid fa-graduation-cap"></i> Education</h3>
                         <div id="education-container">
                             <?php if (empty($educations)): ?>
                                 <div class="repeater-item">
@@ -389,14 +401,57 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                         <button type="button" class="btn-add" onclick="addEducation()">+ Add Education</button>
                     </div>
 
-                    <!-- Experience (Optional) -->
+                    <!-- Card-level Experience Traits -->
+                    <div class="form-section">
+                        <h3 class="section-title"><i class="fa-solid fa-star"></i> Experience Traits</h3>
+                        <p style="color: var(--text-secondary);">Select traits that describe your overall experience section (icons + labels). They will be shown once at the top of the Experience card.</p>
+
+                        <div id="experience-traits-global" class="trait-selector">
+                            <?php
+                            // Options you want to offer (icon|label)
+                            $globalTraitOptions = [
+                                'fa-code|Technical Expertise',
+                                'fa-users|Team Leadership',
+                                'fa-lightbulb|Problem Solving',
+                                'fa-rotate-right|Adaptability',
+                                'fa-rocket|Innovation',
+                                'fa-chart-line|Growth',
+                                'fa-handshake|Collaboration'
+                            ];
+
+                            // build a set for quick lookup
+                            $existingSet = [];
+                            foreach ($existingGlobalTraits as $eg) {
+                                $existingSet[] = trim($eg['trait_icon'] . '|' . $eg['trait_label']);
+                            }
+
+                            foreach ($globalTraitOptions as $opt):
+                                $isSelected = in_array($opt, $existingSet) ? 'selected' : '';
+                            ?>
+                                <div class="trait-option <?php echo $isSelected; ?>" data-value="<?php echo $opt; ?>" onclick="toggleGlobalTrait(this)">
+                                    <i class="fa-solid <?php echo explode('|', $opt)[0]; ?>"></i> <?php echo explode('|', $opt)[1]; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <!-- Hidden container to hold chosen global traits as inputs -->
+                        <div id="experience-traits-global-inputs">
+                            <?php
+                            // Prefill hidden inputs for existing choices (these will be submitted)
+                            foreach ($existingGlobalTraits as $eg): 
+                                $val = $eg['trait_icon'] . '|' . $eg['trait_label'];
+                            ?>
+                                <input type="hidden" name="experience_traits_global[]" value="<?php echo htmlspecialchars($val); ?>">
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <!-- Experience - FIXED: Each experience maintains its own traits -->
                     <div class="form-section">
                         <h3 class="section-title"><i class="fa-solid fa-briefcase"></i> Experience</h3>
                         <div id="experience-container">
-                            <?php foreach ($experiences as $exp): 
-                                $traits = $exp['traits'] ? explode(';;', $exp['traits']) : [];
-                            ?>
-                                <div class="repeater-item">
+                            <?php foreach ($experiences as $expIndex => $exp): ?>
+                                <div class="repeater-item" data-exp-index="<?php echo $expIndex; ?>">
                                     <div class="form-group">
                                         <label class="form-label">Job Title/Position</label>
                                         <input type="text" name="experience_title[]" class="form-input" value="<?php echo htmlspecialchars($exp['job_title']); ?>">
@@ -420,27 +475,19 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                                         <textarea name="experience_description[]" class="form-textarea" rows="3"><?php echo htmlspecialchars($exp['description']); ?></textarea>
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label">Select Traits (Choose up to 4)</label>
-                                        <div class="trait-selector" data-index="<?php echo array_search($exp, $experiences); ?>">
-                                            <?php
-                                            $availableTraits = [
-                                                'fa-code|Academic Projects',
-                                                'fa-users|Team Leadership',
-                                                'fa-lightbulb|Problem Solving',
-                                                'fa-rotate-right|Adaptability',
-                                                'fa-rocket|Innovation',
-                                                'fa-chart-line|Growth',
-                                                'fa-handshake|Collaboration'
-                                            ];
-                                            foreach ($availableTraits as $trait):
-                                                $isSelected = in_array($trait, $traits) ? 'selected' : '';
-                                            ?>
-                                                <div class="trait-option <?php echo $isSelected; ?>" data-value="<?php echo $trait; ?>" onclick="toggleTrait(this)">
-                                                    <i class="fa-solid <?php echo explode('|', $trait)[0]; ?>"></i> <?php echo explode('|', $trait)[1]; ?>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                        <input type="hidden" name="experience_traits[<?php echo array_search($exp, $experiences); ?>][]" class="trait-input">
+                                        <label class="form-label">Keywords (comma-separated) — shown under this experience</label>
+                                        <?php
+                                            // Build a comma-separated string of existing keywords (from experience_traits.trait_label)
+                                            $existingKeywords = [];
+                                            if (!empty($exp['traits'])) {
+                                                foreach ($exp['traits'] as $t) {
+                                                    if (!empty($t['trait_label'])) $existingKeywords[] = $t['trait_label'];
+                                                }
+                                            }
+                                            $keywordsValue = htmlspecialchars(implode(', ', $existingKeywords), ENT_QUOTES, 'UTF-8');
+                                        ?>
+                                        <input type="text" name="experience_keywords[<?php echo $expIndex; ?>]" class="form-input" value="<?php echo $keywordsValue; ?>" placeholder="Machine Learning, Data Visualization, Analytics">
+                                        <small class="form-note">Enter keywords separated by commas. They will display as tags under the description.</small>
                                     </div>
                                     <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
                                 </div>
@@ -449,7 +496,7 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                         <button type="button" class="btn-add" onclick="addExperience()">+ Add Experience</button>
                     </div>
 
-                    <!-- Achievements (Optional) -->
+                    <!-- Achievements -->
                     <div class="form-section">
                         <h3 class="section-title"><i class="fa-solid fa-trophy"></i> Achievements</h3>
                         <div id="achievement-container">
@@ -492,12 +539,15 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                     <!-- Technologies -->
                     <div class="form-section">
                         <h3 class="section-title"><i class="fa-solid fa-laptop-code"></i> Technologies</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">
+                            <i class="fa-solid fa-info-circle"></i> Tip: Add "Multimedia" category if you work with audio/video tools
+                        </p>
                         <div id="tech-container">
                             <?php if (empty($techCategories)): ?>
                                 <div class="repeater-item">
                                     <div class="form-group">
                                         <label class="form-label">Category Name</label>
-                                        <input type="text" name="tech_category[]" class="form-input" placeholder="e.g., Frontend">
+                                        <input type="text" name="tech_category[]" class="form-input" placeholder="e.g., Frontend, Multimedia">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Technologies (comma-separated)</label>
@@ -512,7 +562,7 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Technologies (comma-separated)</label>
-                                        <input type="text" name="tech_items[]" class="form-input" value="<?php echo htmlspecialchars($cat['technologies']); ?>">
+                                        <input type="text" name="tech_items[]" class="form-input" value="<?php echo htmlspecialchars(implode(', ', array_column($cat['technologies'], 'tech_name'))); ?>">
                                     </div>
                                     <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
                                 </div>
@@ -522,8 +572,8 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                     </div>
 
                     <div class="form-actions">
-                        <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> Save & View Resume</button>
-                        <a href="public_resume.php?id=<?php echo $userId; ?>" class="btn-secondary"><i class="fa-solid fa-eye"></i> Cancel</a>
+                        <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> Save Resume</button>
+                        <a href="index.php" class="btn-secondary"><i class="fa-solid fa-arrow-left"></i> Cancel</a>
                     </div>
                 </form>
             </div>
@@ -539,7 +589,6 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
             const container = btn.closest('.repeater-item');
             const parent = container.parentElement;
             
-            // Don't remove if it's the last education item
             if (parent.id === 'education-container' && parent.children.length === 1) {
                 alert('At least one education entry is required!');
                 return;
@@ -580,10 +629,11 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
             container.insertAdjacentHTML('beforeend', html);
         }
         
+        // FIXED: Add new empty experience (not duplicating existing)
         function addExperience() {
             const container = document.getElementById('experience-container');
             const html = `
-                <div class="repeater-item">
+                <div class="repeater-item" data-exp-index="${expCounter}">
                     <div class="form-group">
                         <label class="form-label">Job Title/Position</label>
                         <input type="text" name="experience_title[]" class="form-input">
@@ -631,6 +681,10 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                                 <i class="fa-solid fa-handshake"></i> Collaboration
                             </div>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Keywords (comma-separated)</label>
+                        <input type="text" name="experience_keywords[]" class="form-input" placeholder="e.g., Machine Learning, Data Visualization" value="<?php echo htmlspecialchars( !empty($exp['keywords']) ? implode(', ', $exp['keywords']) : '' ); ?>">
                     </div>
                     <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
                 </div>
@@ -692,7 +746,7 @@ $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
                 <div class="repeater-item">
                     <div class="form-group">
                         <label class="form-label">Category Name</label>
-                        <input type="text" name="tech_category[]" class="form-input" placeholder="e.g., Frontend">
+                        <input type="text" name="tech_category[]" class="form-input" placeholder="e.g., Frontend, Multimedia">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Technologies (comma-separated)</label>
