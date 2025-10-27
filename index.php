@@ -2,6 +2,12 @@
 require_once 'config.php';
 require_once 'session_manager.php';
 
+// Clear PHP cache (temporary - remove after testing)
+if (function_exists('opcache_reset')) {
+    opcache_reset();
+}
+clearstatcache();
+
 if (!isset($db) || !$db) {
     die("Database connection failed. Please check config.php");
 }
@@ -142,7 +148,9 @@ $user = $userData;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $name; ?> - Resume</title>
-    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/style.css">
+    <!-- FIXED: Added cache busting to CSS -->
+    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/style.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/resume.css?v=<?php echo time(); ?>">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -267,6 +275,12 @@ $user = $userData;
                 </div>
             <?php else: ?>
                 <?php
+                // DEBUG: Show template info (remove after testing)
+                echo "<!-- Template: " . __DIR__ . "/resume_template.php -->";
+                echo "<!-- Exists: " . (file_exists('resume_template.php') ? 'YES' : 'NO') . " -->";
+                echo "<!-- Modified: " . date('Y-m-d H:i:s', filemtime('resume_template.php')) . " -->";
+                echo "<!-- Traits: " . count($experienceTraitsGlobal) . " -->";
+                
                 // Include the shared resume template
                 include 'resume_template.php';
                 ?>
@@ -274,7 +288,7 @@ $user = $userData;
         </div>
     </main>
 
-    <script src="<?php echo a($basePath); ?>/js/script.js"></script>
+    <script src="<?php echo a($basePath); ?>/js/script.js?v=<?php echo time(); ?>"></script>
     <script>
         function closeNotification() {
             const notification = document.getElementById('successNotification');

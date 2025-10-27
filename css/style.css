@@ -323,6 +323,7 @@ label, legend, fieldset {
 
 .profile-card {
     position: relative;
+    min-height: 440px;
 }
 
 /* FIXED: Profile name and title spacing */
@@ -333,35 +334,14 @@ label, legend, fieldset {
 }
 
 .profile-section {
-    padding: 0 30px 30px 30px;
+    padding: 15px 0 30px 0;  /* ✅ FIXED: Removed side padding (30px → 0) */
 }
 
-.profile-image-container {
-    text-align: center;
-    margin-bottom: 25px;
-    padding-top: 15px;
-}
-
-.profile-image {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 5px solid var(--border-color);
-    transition: all 0.3s ease;
-}
-
-.profile-image:hover {
-    transform: scale(1.05);
-    border-color: var(--accent-color);
-}
-
-.profile-info h3 {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    text-align: center;
-    margin-bottom: 8px;
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 0;
 }
 
 .name-highlight {
@@ -380,6 +360,7 @@ label, legend, fieldset {
 .profile-details {
     margin-top: 20px;
     margin-bottom: 25px;
+    padding: 0 20px;  /* ✅ ADD: Some padding for the details list */
 }
 
 .detail-item {
@@ -417,6 +398,7 @@ label, legend, fieldset {
     display: flex;
     justify-content: center;
     gap: 15px;
+    padding: 0 20px;  /* ✅ ADD: Match details padding */
 }
 
 .social-icon {
@@ -618,39 +600,57 @@ label, legend, fieldset {
     margin-bottom: 20px;
 }
 
-/* Make keyword pills match .experience-date sizing but always red */
 .experience-highlights {
-    margin-top: 8px;
     display: flex;
+    justify-content: center;
+    gap: 20px;
     flex-wrap: wrap;
-    gap: 6px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-color);
 }
 
-.experience-highlights .highlight-item {
-    display: inline-flex;
+.highlight-item {
+    display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 8px;
-    margin: 2px 4px 2px 0;
+    padding: 15px;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    min-width: 120px;
+    cursor: pointer;
 }
 
-/* the text element (your current markup has a <span>) */
-.experience-highlights .highlight-item span,
-.experience-highlights .highlight-item .kw-pill {
-    background: #e63946;         /* fixed red */
-    color: #ffffff;
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-size: 0.8rem;
+.highlight-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px var(--shadow-light);
+    border-color: var(--accent-color);
+}
+
+.highlight-item i {
+    color: var(--accent-color);
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.highlight-item:hover i {
+    transform: scale(1.1);
+}
+
+.highlight-item span {
+    color: var(--text-primary);
+    font-size: 0.9rem;
     font-weight: 600;
-    display: inline-block;
-    line-height: 1;
+    text-align: center;
+    line-height: 1.2;
 }
 
-/* ensure it's red in dark mode too */
-[data-theme="dark"] .experience-highlights .highlight-item span,
-[data-theme="dark"] .experience-highlights .highlight-item .kw-pill {
-    background: #e63946;
-    color: #fff;
+/* Dark mode adjustments */
+[data-theme="dark"] .highlight-item span {
+    color: var(--white);
 }
 
 .experience-item:last-child {
@@ -712,6 +712,7 @@ label, legend, fieldset {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    margin-top: 15px;
 }
 
 .skill-tag {
@@ -721,6 +722,14 @@ label, legend, fieldset {
     border-radius: 12px;
     font-size: 0.8rem;
     font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.skill-tag:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 35, 60, 0.3);
 }
 
 /* Experience highlights per-experience styling */
@@ -998,12 +1007,7 @@ label, legend, fieldset {
     .profile-name-title {
         font-size: 1.1rem;
     }
-    
-    .profile-image {
-        width: 120px;
-        height: 120px;
-    }
-    
+
     .tech-content {
         padding: 0 20px 20px 20px;
     }
@@ -1039,12 +1043,21 @@ label, legend, fieldset {
     }
     
     .experience-highlights {
-        justify-content: center;
+        gap: 15px;
+        padding-top: 15px;
     }
     
     .highlight-item {
-        width: 100%;
-        max-width: 200px;
+        min-width: 100px;
+        padding: 12px;
+    }
+    
+    .highlight-item i {
+        font-size: 1.3rem;
+    }
+    
+    .highlight-item span {
+        font-size: 0.85rem;
     }
     
     .experience-skills {
@@ -1129,6 +1142,25 @@ label, legend, fieldset {
     
     .experience-highlights {
         gap: 10px;
+        justify-content: center;
+    }
+    
+    .highlight-item {
+        min-width: 90px;
+        padding: 10px;
+    }
+    
+    .highlight-item i {
+        font-size: 1.2rem;
+    }
+    
+    .highlight-item span {
+        font-size: 0.8rem;
+    }
+    
+    .skill-tag {
+        font-size: 0.75rem;
+        padding: 3px 8px;
     }
     
     .experience-item {
@@ -1170,6 +1202,25 @@ label, legend, fieldset {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
+
+    .highlight-item {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        border: 1px solid #ccc;
+    }
+    
+    .highlight-item i {
+        color: #ef233c !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .skill-tag {
+        background: #ef233c !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
 }
 
 @media (prefers-contrast: high) {
@@ -1179,9 +1230,16 @@ label, legend, fieldset {
     
     .timeline-content,
     .achievement-item,
-    .highlight-item,
     .experience-item {
         border: 1px solid var(--text-primary);
+    }
+
+    .highlight-item {
+        border: 2px solid var(--text-primary);
+    }
+    
+    .skill-tag {
+        border: 1px solid var(--white);
     }
 }
 
@@ -1193,6 +1251,22 @@ label, legend, fieldset {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+
+    .highlight-item,
+    .highlight-item i,
+    .skill-tag {
+        transition: none !important;
+    }
+    
+    .highlight-item:hover,
+    .skill-tag:hover {
+        transform: none !important;
+    }
+}
+
+.highlight-item:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 2px;
 }
 
 @media (max-width: 768px) {
@@ -1634,3 +1708,12 @@ button {
         font-size: 1.2rem;
     }
 }
+
+/* Stagger animation for traits */
+.highlight-item:nth-child(1) { animation: fadeInUp 0.5s ease 0.1s both; }
+.highlight-item:nth-child(2) { animation: fadeInUp 0.5s ease 0.2s both; }
+.highlight-item:nth-child(3) { animation: fadeInUp 0.5s ease 0.3s both; }
+.highlight-item:nth-child(4) { animation: fadeInUp 0.5s ease 0.4s both; }
+.highlight-item:nth-child(5) { animation: fadeInUp 0.5s ease 0.5s both; }
+.highlight-item:nth-child(6) { animation: fadeInUp 0.5s ease 0.6s both; }
+.highlight-item:nth-child(7) { animation: fadeInUp 0.5s ease 0.7s both; }

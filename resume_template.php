@@ -140,16 +140,15 @@ if (!function_exists('e')) {
                     <?php endforeach; ?>
                 </div>
                 
-                <!-- Global Experience Traits (shown once at bottom) -->
+                <!-- Global Experience Traits (shown once at bottom with proper styling) -->
                 <?php if (!empty($experienceTraitsGlobal)): ?>
-                <div class="experience-traits-footer">
-                    <div class="trait-boxes">
-                        <?php foreach ($experienceTraitsGlobal as $gtrait): ?>
-                        <div class="trait-box" title="<?php echo e($gtrait['trait_label']); ?>">
-                            <i class="fa-solid <?php echo e($gtrait['trait_icon']); ?>"></i>
-                        </div>
-                        <?php endforeach; ?>
+                <div class="experience-highlights">
+                    <?php foreach ($experienceTraitsGlobal as $gtrait): ?>
+                    <div class="highlight-item">
+                        <i class="fa-solid <?php echo e($gtrait['trait_icon']); ?>"></i>
+                        <span><?php echo e($gtrait['trait_label']); ?></span>
                     </div>
+                    <?php endforeach; ?>
                 </div>
                 <?php endif; ?>
             </div>

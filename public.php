@@ -2,6 +2,11 @@
 // public.php - Using shared template
 require_once 'config.php';
 
+// Prevent caching to ensure fresh data
+header("Cache-Control: no-cache, no-store, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 function e($value) {
     return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
 }
@@ -153,8 +158,8 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $name; ?> - Resume</title>
-    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/style.css">
-    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/resume.css">
+    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/style.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/resume.css?v=<?php echo time(); ?>">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -226,16 +231,18 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
         </div>
     </main>
 
-    <script src="<?php echo a($basePath); ?>/js/script.js"></script>
+    <script src="<?php echo a($basePath); ?>/js/script.js?v=<?php echo time(); ?>"></script>
 
     <?php
-    // Optional debug info
+    // Optional debug info - add ?debug=1 to URL to see
     if (!empty($_GET['debug'])) {
-        echo "<pre style='background:#111;color:#bada55;padding:12px;'>";
-        echo "DEBUG: basePath=" . a($basePath) . "\n";
-        echo "Requested CSS: " . a($basePath) . "/css/style.css\n";
-        echo "Requested JS:  " . a($basePath) . "/js/script.js\n";
-        echo "REQUEST_URI: " . a($_SERVER['REQUEST_URI'] ?? '') . "\n";
+        echo "<pre style='background:#111;color:#bada55;padding:12px;margin:20px;'>";
+        echo "DEBUG INFO:\n";
+        echo "User ID: " . $userId . "\n";
+        echo "Username: " . a($user['username']) . "\n";
+        echo "Experiences: " . count($experiences) . "\n";
+        echo "Global Traits: " . count($experienceTraitsGlobal) . "\n";
+        echo "Last Updated: " . date('Y-m-d H:i:s') . "\n";
         echo "</pre>";
     }
     ?>
