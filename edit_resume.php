@@ -271,7 +271,7 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
                         Editing as <strong><?php echo htmlspecialchars($currentUser['username']); ?></strong>
                         <a href="<?php echo a($basePath); ?>/public/<?php echo urlencode($userData['public_slug'] ?? $userData['username']); ?>" class="logout-link">Public View</a>
                         <a href="<?php echo a($basePath); ?>/index.php" class="logout-link">Home</a>
-                        <a href="<?php echo a($basePath); ?>/logout.php" class="logout-link">Log out</a>
+                        <a href="<?php echo a($basePath); ?>/logout.php" class="logout-link">Log Out</a>
                     </p>
                 </div>
             </div>

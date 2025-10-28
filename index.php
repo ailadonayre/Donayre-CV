@@ -266,7 +266,7 @@ $user = $userData;
             <?php elseif (!$hasResumeData): ?>
                 <div class="empty-state">
                     <div class="empty-state-icon">
-                        <i class="fa-solid fa-file-slash"></i>
+                        <i class="fa-solid fa-file-excel"></i>
                     </div>
                     <h2 class="empty-state-title">Resume Not Available</h2>
                     <p class="empty-state-description">

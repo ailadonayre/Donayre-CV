@@ -37,12 +37,56 @@ class User {
         return htmlspecialchars(stripslashes(trim($data)));
     }
     
+    /**
+     * Generate a URL-friendly slug from username
+     */
+    private function generateSlug($username) {
+        // Convert to lowercase and replace spaces/special chars with hyphens
+        $slug = strtolower(trim($username));
+        $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+        $slug = preg_replace('/-+/', '-', $slug); // Remove multiple hyphens
+        $slug = trim($slug, '-'); // Remove leading/trailing hyphens
+        
+        return $slug ?: 'user'; // Fallback if slug is empty
+    }
+    
+    /**
+     * Ensure slug is unique by appending number if necessary
+     */
+    private function ensureUniqueSlug($baseSlug) {
+        if (!$this->db) {
+            return $baseSlug;
+        }
+        
+        $slug = $baseSlug;
+        $counter = 1;
+        
+        while (true) {
+            $stmt = $this->db->prepare("SELECT id FROM users WHERE public_slug = ?");
+            $stmt->execute([$slug]);
+            
+            if ($stmt->rowCount() === 0) {
+                return $slug; // Slug is unique
+            }
+            
+            // Slug exists, try with a number suffix
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+            
+            // Prevent infinite loop
+            if ($counter > 1000) {
+                return $baseSlug . '-' . time();
+            }
+        }
+    }
+    
     public function register() {
         if (!$this->db) {
             return ['success' => false, 'message' => 'Database connection not available'];
         }
         
         try {
+            // Check if username or email already exists
             $checkStmt = $this->db->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
             $checkStmt->execute([$this->username, $this->email]);
             
@@ -50,8 +94,13 @@ class User {
                 return ['success' => false, 'message' => 'Username or email already exists'];
             }
             
-            $stmt = $this->db->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
-            $stmt->execute([$this->username, $this->email, $this->passwordHash]);
+            // Generate unique public_slug
+            $baseSlug = $this->generateSlug($this->username);
+            $publicSlug = $this->ensureUniqueSlug($baseSlug);
+            
+            // Insert new user with public_slug
+            $stmt = $this->db->prepare("INSERT INTO users (username, email, password_hash, public_slug) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$this->username, $this->email, $this->passwordHash, $publicSlug]);
             
             return ['success' => true, 'message' => 'Registration successful!'];
             
@@ -62,7 +111,7 @@ class User {
     
     public function authenticate($username, $password) {
         if ($username === 'admin' && $password === '1234') {
-            return ['success' => true, 'message' => 'Login successful!', 'user' => ['username' => 'admin', 'email' => 'admin@admin.com']];
+            return ['success' => true, 'message' => 'Login successful!', 'user' => ['id' => 'admin', 'username' => 'admin', 'email' => 'admin@admin.com']];
         }
         
         if ($this->db) {
