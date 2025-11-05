@@ -179,7 +179,7 @@
 
 .alert-error {
     background: rgba(239, 35, 60, 0.1);
-    color: var(--accent-color);
+    color: var(--text-primary);
     border: 2px solid rgba(239, 35, 60, 0.3);
 }
 
@@ -258,7 +258,7 @@
 
 .form-input:valid:not(:placeholder-shown),
 .form-textarea:valid:not(:placeholder-shown) {
-    border-color: #27ae60;
+    border-color: #5db8b1;
 }
 
 /* Dark mode adjustments */

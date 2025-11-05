@@ -154,14 +154,14 @@ function enhanceTimeline() {
             const marker = c.parentElement.querySelector('.timeline-marker');
             if (marker) {
                 marker.style.transform = 'scale(1.2)';
-                marker.style.background = '#d84e66';
+                marker.style.background = '#58a49d';
             }
         });
         c.addEventListener('mouseleave', () => {
             const marker = c.parentElement.querySelector('.timeline-marker');
             if (marker) {
                 marker.style.transform = 'scale(1)';
-                marker.style.background = '#f4788d';
+                marker.style.background = '#5db8b1';
             }
         });
     });
@@ -262,8 +262,8 @@ function showTooltip(message, duration = 2000) {
         top: 20px;
         left: 50%;
         transform: translateX(-50%);
-        background: #2c384b;
-        color: #f8f8f6;
+        background: #28384f;
+        color: #f1f4f6;
         padding: 12px 24px;
         border-radius: 25px;
         font-size: 0.9rem;
@@ -274,7 +274,7 @@ function showTooltip(message, duration = 2000) {
         max-width: 300px;
         text-align: center;
         white-space: pre-line;
-        border: 1px solid #f4788d;
+        border: 1px solid #5db8b1;
     `;
 
     document.body.appendChild(tip);
@@ -289,7 +289,7 @@ function addAccessibilityFeatures() {
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     ).forEach(el => {
         el.addEventListener('focus', () => {
-            el.style.outline = '3px solid #f4788d';
+            el.style.outline = '3px solid #5db8b1';
             el.style.outlineOffset = '2px';
         });
         el.addEventListener('blur', () => el.style.outline = 'none');
