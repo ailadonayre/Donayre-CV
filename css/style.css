@@ -417,7 +417,7 @@ label, legend, fieldset {
 .social-icon:hover {
     background: var(--accent-hover);
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(239, 35, 60, 0.3);
+    box-shadow: 0 4px 12px rgba(93, 184, 177, 0.2);
 }
 
 .tech-card {
@@ -481,7 +481,7 @@ label, legend, fieldset {
     color: var(--white);
     border-color: var(--accent-color);
     transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 15px rgba(239, 35, 60, 0.3);
+    box-shadow: 0 4px 12px rgba(93, 184, 177, 0.2);
 }
 
 .education-card .card-title {
@@ -674,7 +674,7 @@ label, legend, fieldset {
 .skill-tag:hover {
     background: var(--accent-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(239, 35, 60, 0.3);
+    box-shadow: 0 4px 12px rgba(93, 184, 177, 0.2);
 }
 
 .experience-highlights {
@@ -1420,7 +1420,7 @@ a:focus,
     outline: none;
     border-color: var(--accent-color);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 35, 60, 0.2);
+    box-shadow: 0 4px 12px rgba(93, 184, 177, 0.2);
 }
 
 .form-input::placeholder {
@@ -1474,7 +1474,7 @@ button {
 .btn-auth:hover {
     background: var(--accent-hover);
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(239, 35, 60, 0.3);
+    box-shadow: 0 4px 12px rgba(93, 184, 177, 0.2);
 }
 
 .btn-auth:active {
@@ -1577,7 +1577,6 @@ button {
 /* Experience traits footer - small square boxes at bottom */
 .experience-traits-footer {
     padding: 0 30px 20px 30px;
-    border-top: 2px solid var(--border-color);
     margin-top: 20px;
     padding-top: 20px;
 }
@@ -1605,7 +1604,7 @@ button {
 .trait-box:hover {
     background: var(--accent-color);
     transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 6px 20px rgba(239, 35, 60, 0.3);
+    box-shadow: 0 4px 12px rgba(93, 184, 177, 0.2);
 }
 
 .trait-box i {

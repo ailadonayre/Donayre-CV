@@ -137,7 +137,7 @@
 .btn-primary:hover {
     background: var(--accent-hover);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 35, 60, 0.3);
+    box-shadow: 0 4px 12px rgba(93, 184, 177, 0.2);
 }
 
 .btn-secondary {
@@ -151,7 +151,7 @@
     color: var(--white);
     border-color: var(--accent-color);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 35, 60, 0.2);
+    box-shadow: 0 4px 12px rgba(93, 184, 177, 0.2);
 }
 
 /* Public Resume Styles */

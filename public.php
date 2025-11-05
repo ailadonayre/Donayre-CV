@@ -215,7 +215,7 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
             <?php if (!$hasResumeData): ?>
                 <div class="empty-state">
                     <div class="empty-state-icon">
-                        <i class="fa-solid fa-file-slash"></i>
+                        <i class="fa-solid fa-file"></i>
                     </div>
                     <h2 class="empty-state-title">Resume Not Available</h2>
                     <p class="empty-state-description">

@@ -139,7 +139,7 @@ function enhanceTechTags() {
     document.querySelectorAll('.tech-tag').forEach(tag => {
         tag.addEventListener('mouseenter', () => {
             tag.style.transform = 'translateY(-2px) scale(1.05)';
-            tag.style.boxShadow = '0 6px 15px rgba(239, 35, 60, 0.18)';
+            tag.style.boxShadow = '0 4px 12px rgba(93, 184, 177, 0.2);';
         });
         tag.addEventListener('mouseleave', () => {
             tag.style.transform = 'translateY(0) scale(1)';

@@ -11,6 +11,17 @@ $userId = $currentUser['id'];
 $error = '';
 $success = $sessionManager->getFlash('success');
 
+// ✅ Helper function to convert any value to proper boolean for PostgreSQL
+function toPostgresBool($value) {
+    if ($value === true || $value === 't' || $value === '1' || $value === 1 || $value === 'true') {
+        return true;
+    }
+    if ($value === false || $value === 'f' || $value === '0' || $value === 0 || $value === 'false' || $value === '' || $value === null) {
+        return false;
+    }
+    return false; // Default to false for any unexpected value
+}
+
 // Fetch current user data
 try {
     $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
@@ -54,10 +65,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
             }
         }
         
-        // Handle Education section flag
-        $hasEducation = (isset($_POST['has_education']) && $_POST['has_education'] === 'yes');
+        // ✅ FIXED: Handle Education section flag - convert "yes"/"no" to boolean
+        $hasEducation = toPostgresBool(isset($_POST['has_education']) && $_POST['has_education'] === 'yes');
         $stmt = $db->prepare("UPDATE users SET has_education = ? WHERE id = ?");
-        $stmt->execute([$hasEducation, $userId]); // Pass as PHP boolean
+        $stmt->bindValue(1, $hasEducation, PDO::PARAM_BOOL);
+        $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+        $stmt->execute();
 
         $db->prepare("DELETE FROM education WHERE user_id = ?")->execute([$userId]);
 
@@ -78,10 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
             }
         }
 
-        // Handle Experience section flag
-        $hasExperience = (isset($_POST['has_experience']) && $_POST['has_experience'] === 'yes');
+        // ✅ FIXED: Handle Experience section flag - convert "yes"/"no" to boolean
+        $hasExperience = toPostgresBool(isset($_POST['has_experience']) && $_POST['has_experience'] === 'yes');
         $stmt = $db->prepare("UPDATE users SET has_experience = ? WHERE id = ?");
-        $stmt->execute([$hasExperience, $userId]); // Pass as PHP boolean
+        $stmt->bindValue(1, $hasExperience, PDO::PARAM_BOOL);
+        $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+        $stmt->execute();
 
         $db->prepare("DELETE FROM experience WHERE user_id = ?")->execute([$userId]);
 
@@ -118,10 +133,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
             }
         }
 
-        // Handle Achievements section flag
-        $hasAchievements = (isset($_POST['has_achievements']) && $_POST['has_achievements'] === 'yes');
+        // ✅ FIXED: Handle Achievements section flag - convert "yes"/"no" to boolean
+        $hasAchievements = toPostgresBool(isset($_POST['has_achievements']) && $_POST['has_achievements'] === 'yes');
         $stmt = $db->prepare("UPDATE users SET has_achievements = ? WHERE id = ?");
-        $stmt->execute([$hasAchievements, $userId]); // Pass as PHP boolean
+        $stmt->bindValue(1, $hasAchievements, PDO::PARAM_BOOL);
+        $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+        $stmt->execute();
 
         $db->prepare("DELETE FROM achievements WHERE user_id = ?")->execute([$userId]);
 
@@ -141,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
             }
         }
 
-        // Handle Technologies - NEW STRUCTURE
+        // ✅ CRITICAL FIX: Handle Technologies - is_custom is a BOOLEAN column
         $db->prepare("DELETE FROM user_technologies WHERE user_id = ?")->execute([$userId]);
 
         // Get available categories
@@ -172,6 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                     // Skip the "custom:" entry - we'll handle it separately
                     if (strpos($tech, 'custom:') === 0) continue;
                     
+                    // ✅ CRITICAL: Convert is_custom to proper boolean
                     $isCustom = false;
                     
                     // If this is "Other" and we have a custom value, use the custom value instead
@@ -180,7 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                         if (strlen($tech) > 100) {
                             $tech = substr($tech, 0, 100);
                         }
-                        $isCustom = true;
+                        $isCustom = true; // This is a custom entry
                     } elseif ($tech === 'Other') {
                         // "Other" is checked but no custom value provided, skip it
                         continue;
@@ -189,8 +207,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                     // Sanitize preset options too
                     $tech = htmlspecialchars($tech, ENT_QUOTES, 'UTF-8');
                     
+                    // ✅ CRITICAL FIX: Use bindValue with PDO::PARAM_BOOL for is_custom
                     $stmt = $db->prepare("INSERT INTO user_technologies (user_id, category, technology_name, is_custom, display_order) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->execute([$userId, $category, $tech, $isCustom, $displayOrder++]);
+                    $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+                    $stmt->bindValue(2, $category, PDO::PARAM_STR);
+                    $stmt->bindValue(3, $tech, PDO::PARAM_STR);
+                    $stmt->bindValue(4, toPostgresBool($isCustom), PDO::PARAM_BOOL); // ✅ THIS WAS THE BUG!
+                    $stmt->bindValue(5, $displayOrder, PDO::PARAM_INT);
+                    $stmt->execute();
+                    
+                    $displayOrder++;
                 }
             }
         }
@@ -267,10 +293,11 @@ $socialData = $db->prepare("SELECT * FROM social_links WHERE user_id = ? ORDER B
 $socialData->execute([$userId]);
 $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
 
-// **FIX: Proper initialization of dropdowns based on flags AND existing data**
-$hasEducation = ($userData['has_education'] ?? false) ? true : (count($educations) > 0);
-$hasExperience = ($userData['has_experience'] ?? false) ? true : (count($experiences) > 0);
-$hasAchievements = ($userData['has_achievements'] ?? false) ? true : (count($achievements) > 0);
+// ✅ FIXED: Proper initialization of dropdowns based on flags AND existing data
+// Convert PostgreSQL boolean to PHP boolean properly
+$hasEducation = toPostgresBool($userData['has_education'] ?? false) ?: (count($educations) > 0);
+$hasExperience = toPostgresBool($userData['has_experience'] ?? false) ?: (count($experiences) > 0);
+$hasAchievements = toPostgresBool($userData['has_achievements'] ?? false) ?: (count($achievements) > 0);
 
 // Compute base path
 $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');

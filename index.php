@@ -204,7 +204,7 @@ $user = $userData;
         .btn-create-resume:hover {
             background: var(--accent-hover);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(239, 35, 60, 0.3);
+            box-shadow: 0 4px 12px rgba(93, 184, 177, 0.2);
         }
     </style>
 </head>
