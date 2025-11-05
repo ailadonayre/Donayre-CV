@@ -1,22 +1,4 @@
 <?php
-/**
- * Shared Resume Template
- * Used by both index.php and public.php to display resume content
- * 
- * Required variables:
- * - $user (array): User data
- * - $socialLinks (array): Social links
- * - $educations (array): Education entries
- * - $experiences (array): Experience entries with keywords
- * - $experienceTraitsGlobal (array): Global experience traits
- * - $achievements (array): Achievements
- * - $name (string): User's full name
- * - $title (string): User's title/position
- * - $hasResumeData (bool): Whether resume has content
- * - $isOwner (bool): Whether current user is owner (for index.php)
- * - $currentUser (array|null): Current logged-in user data
- * - $basePath (string): Base path for assets
- */
 
 // Helper function (if not already defined)
 if (!function_exists('e')) {
@@ -144,8 +126,9 @@ if (!empty($user['id'])) {
                 <div class="experience-traits-footer">
                     <div class="trait-boxes">
                         <?php foreach ($experienceTraitsGlobal as $trait): ?>
-                            <div class="trait-box" title="<?php echo e($trait['trait_label']); ?>">
+                            <div class="trait-box">
                                 <i class="fa-solid <?php echo e($trait['trait_icon']); ?>"></i>
+                                <span class="trait-label"><?php echo e($trait['trait_label']); ?></span>
                             </div>
                         <?php endforeach; ?>
                     </div>

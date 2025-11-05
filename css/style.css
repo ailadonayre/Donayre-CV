@@ -423,6 +423,9 @@ label, legend, fieldset {
 .tech-card {
     grid-column: 1 / -1;
     width: 100%;
+    margin-top: 0;
+    margin-top: 0;
+    margin-bottom: 30px;
 }
 
 .tech-content {
@@ -719,7 +722,7 @@ label, legend, fieldset {
 }
 
 .achievements-list {
-    padding: 0 30px 30px 30px;
+    padding: 20px 30px 30px 30px;
 }
 
 .achievement-item {
@@ -845,6 +848,7 @@ label, legend, fieldset {
         grid-template-columns: 1fr 1fr;
         gap: 30px;
         align-items: stretch;
+        margin-bottom: 0;
     }
     
     .left-column,
@@ -852,6 +856,12 @@ label, legend, fieldset {
         display: flex;
         flex-direction: column;
         height: 100%;
+        margin-bottom: 0;
+    }
+
+    .left-column > .card:last-child,
+    .right-column > .card:last-child {
+        margin-bottom: 0;
     }
     
     .experience-card,
@@ -1578,25 +1588,26 @@ button {
 .experience-traits-footer {
     padding: 0 30px 20px 30px;
     margin-top: 20px;
-    padding-top: 20px;
 }
 
 .trait-boxes {
     display: flex;
-    justify-content: center;
-    gap: 12px;
+    gap: 15px;
     flex-wrap: wrap;
 }
 
 .trait-box {
-    width: 50px;
-    height: 50px;
+    min-width: 100px;
+    max-width: 140px;
+    padding: 12px 8px;
     background: var(--bg-secondary);
     border: 2px solid var(--accent-color);
     border-radius: 8px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -1617,6 +1628,21 @@ button {
     color: var(--white);
 }
 
+.trait-box .trait-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-align: center;
+    line-height: 1.2;
+    transition: color 0.3s ease;
+    word-wrap: break-word;
+    hyphens: auto;
+}
+
+.trait-box:hover .trait-label {
+    color: var(--white);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .experience-traits-footer {
@@ -1625,16 +1651,21 @@ button {
     }
     
     .trait-boxes {
-        gap: 10px;
+        gap: 12px;
     }
     
     .trait-box {
-        width: 45px;
-        height: 45px;
+        min-width: 90px;
+        max-width: 120px;
+        padding: 10px 6px;
     }
     
     .trait-box i {
         font-size: 1.3rem;
+    }
+    
+    .trait-box .trait-label {
+        font-size: 0.7rem;
     }
 }
 
@@ -1645,16 +1676,21 @@ button {
     }
     
     .trait-boxes {
-        gap: 8px;
+        gap: 10px;
     }
     
     .trait-box {
-        width: 40px;
-        height: 40px;
+        min-width: 80px;
+        max-width: 100px;
+        padding: 8px 5px;
     }
     
     .trait-box i {
         font-size: 1.2rem;
+    }
+    
+    .trait-box .trait-label {
+        font-size: 0.65rem;
     }
 }
 
