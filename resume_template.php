@@ -10,13 +10,13 @@
  * - $experiences (array): Experience entries with keywords
  * - $experienceTraitsGlobal (array): Global experience traits
  * - $achievements (array): Achievements
- * - $techCategories (array): Technology categories with technologies
  * - $name (string): User's full name
  * - $title (string): User's title/position
  * - $hasResumeData (bool): Whether resume has content
  * - $isOwner (bool): Whether current user is owner (for index.php)
  * - $currentUser (array|null): Current logged-in user data
  * - $basePath (string): Base path for assets
+ * - $userTechnologies (array): User's selected technologies grouped by category
  */
 
 // Helper function (if not already defined)
@@ -25,6 +25,11 @@ if (!function_exists('e')) {
         return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
     }
 }
+
+// Check for has_* flags to show "No available data."
+$showEducation = ($user['has_education'] ?? false) || !empty($educations);
+$showExperience = ($user['has_experience'] ?? false) || !empty($experiences);
+$showAchievements = ($user['has_achievements'] ?? false) || !empty($achievements);
 ?>
 
 <div class="content-grid">
@@ -102,11 +107,11 @@ if (!function_exists('e')) {
             </div>
         </div>
 
-        <?php if (!empty($experiences)): ?>
         <!-- Experience Card -->
         <div class="card experience-card">
             <h3 class="card-title">EXPERIENCE</h3>
             
+            <?php if ($showExperience && !empty($experiences)): ?>
             <div class="experience-content">
                 <div class="experience-section">
                     <?php foreach ($experiences as $exp): ?>
@@ -116,129 +121,4 @@ if (!function_exists('e')) {
                             <?php if (!empty($exp['start_date']) || !empty($exp['end_date'])): ?>
                             <span class="experience-date">
                                 <?php echo e($exp['start_date']); ?>
-                                <?php echo (!empty($exp['start_date']) && !empty($exp['end_date'])) ? ' - ' : ''; ?>
-                                <?php echo e($exp['end_date']); ?>
-                            </span>
-                            <?php endif; ?>
-                        </div>
-                        <?php if (!empty($exp['company'])): ?>
-                        <p class="experience-company"><?php echo e($exp['company']); ?></p>
-                        <?php endif; ?>
-                        <?php if (!empty($exp['description'])): ?>
-                        <p class="experience-description"><?php echo nl2br(e($exp['description'])); ?></p>
-                        <?php endif; ?>
-                        
-                        <!-- Per-experience keywords -->
-                        <?php if (!empty($exp['keywords'])): ?>
-                        <div class="experience-skills">
-                            <?php foreach ($exp['keywords'] as $kw): ?>
-                                <span class="skill-tag"><?php echo e($kw); ?></span>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-                
-                <!-- Global Experience Traits (shown once at bottom with proper styling) -->
-                <?php if (!empty($experienceTraitsGlobal)): ?>
-                <div class="experience-highlights">
-                    <?php foreach ($experienceTraitsGlobal as $gtrait): ?>
-                    <div class="highlight-item">
-                        <i class="fa-solid <?php echo e($gtrait['trait_icon']); ?>"></i>
-                        <span><?php echo e($gtrait['trait_label']); ?></span>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-    </div>
-    
-    <!-- Right Column -->
-    <div class="right-column">
-        <?php if (!empty($educations)): ?>
-        <div class="card education-card">
-            <h3 class="card-title">EDUCATION</h3>
-            <div class="timeline">
-                <?php foreach ($educations as $edu): ?>
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <h4 class="timeline-title"><?php echo e($edu['degree']); ?></h4>
-                        <?php if (!empty($edu['institution'])): ?>
-                        <p class="timeline-subtitle"><?php echo e($edu['institution']); ?></p>
-                        <?php endif; ?>
-                        <?php if (!empty($edu['start_date']) || !empty($edu['end_date'])): ?>
-                        <span class="timeline-date">
-                            <?php echo e($edu['start_date']); ?>
-                            <?php echo (!empty($edu['start_date']) && !empty($edu['end_date'])) ? ' - ' : ''; ?>
-                            <?php echo e($edu['end_date']); ?>
-                        </span>
-                        <?php endif; ?>
-                        <?php if (!empty($edu['description'])): ?>
-                        <p class="timeline-description"><?php echo nl2br(e($edu['description'])); ?></p>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <?php if (!empty($achievements)): ?>
-        <div class="card achievements-card">
-            <h3 class="card-title">ACHIEVEMENTS</h3>
-            <div class="achievements-list">
-                <?php foreach ($achievements as $ach): ?>
-                <div class="achievement-item">
-                    <div class="achievement-icon">
-                        <i class="fa-solid <?php echo e($ach['icon']); ?>"></i>
-                    </div>
-                    <div class="achievement-content">
-                        <h4 class="achievement-title"><?php echo e($ach['title']); ?></h4>
-                        <?php if (!empty($ach['description'])): ?>
-                        <p class="achievement-description"><?php echo nl2br(e($ach['description'])); ?></p>
-                        <?php endif; ?>
-                        <?php if (!empty($ach['achievement_date'])): ?>
-                        <span class="achievement-date"><?php echo e($ach['achievement_date']); ?></span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-    </div>
-</div>
-
-<?php if (!empty($techCategories)): ?>
-<!-- Technologies Card (Full Width) -->
-<div class="card tech-card">
-    <h3 class="card-title">TECHNOLOGIES</h3>
-    <div class="tech-content">
-        <div class="tech-grid">
-            <?php foreach ($techCategories as $cat): ?>
-            <div class="tech-category">
-                <h4><?php echo e($cat['category_name']); ?></h4>
-                <div class="tech-tags">
-                    <?php 
-                    $uniqueTechs = [];
-                    foreach ($cat['technologies'] as $tech) {
-                        $techName = $tech['tech_name'];
-                        if (!in_array($techName, $uniqueTechs)) {
-                            $uniqueTechs[] = $techName;
-                            ?>
-                            <span class="tech-tag"><?php echo e($techName); ?></span>
-                            <?php
-                        }
-                    }
-                    ?>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
+                                <?php echo (!empty($exp['start_date'])

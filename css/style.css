@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-    --primary-color: #2b2d42;       
-    --secondary-color: #8d99ae;     
-    --accent-color: #ef233c;        
-    --accent-hover: #d80032;        
-    --white: #edf2f4;              
-    --light-gray: #f8f9fa;
-    --border-gray: #e5e7eb;
-    --text-light: #6b7280;
+    --primary-color: #2c384b;       
+    --secondary-color: #f0f0e9;     
+    --accent-color: #f4788d;        
+    --accent-hover: #d84e66;        
+    --white: #f8f8f6;              
+    --light-gray: #f1f1f0;
+    --border-gray: #e8e8e5;
+    --text-light: #4c5d79;
     
     --bg-primary: var(--white);
     --bg-secondary: var(--light-gray);
@@ -19,15 +19,15 @@
     --shadow-light: rgba(43, 45, 66, 0.08);
     --shadow-medium: rgba(43, 45, 66, 0.12);
     --shadow-heavy: rgba(43, 45, 66, 0.18);
-    --scrollbar-color: #9ca3af;
+    --scrollbar-color: #f0f0e9;
 }
 [data-theme="dark"] {
-    --bg-primary: #1a1c2e;
-    --bg-secondary: #2b2d42;
+    --bg-primary: #202b3b;
+    --bg-secondary: #2c384b;
     --text-primary: var(--white);
     --text-secondary: var(--white);
     --text-muted: var(--white);
-    --border-color: #4a4d63;
+    --border-color: #4c5d79;
     --shadow-light: rgba(237, 242, 244, 0.05);
     --shadow-medium: rgba(237, 242, 244, 0.08);
     --shadow-heavy: rgba(237, 242, 244, 0.12);
@@ -38,10 +38,8 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    /* DO NOT add font-family here - it breaks Font Awesome icons */
 }
 
-/* Explicitly protect ALL icon elements */
 i,
 i[class*="fa"],
 [class*="fa-"],
@@ -1163,13 +1161,13 @@ label, legend, fieldset {
     }
     
     .highlight-item i {
-        color: #ef233c !important;
+        color: #f4788d !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
     
     .skill-tag {
-        background: #ef233c !important;
+        background: #f4788d !important;
         color: white !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
