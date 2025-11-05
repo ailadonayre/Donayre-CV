@@ -41,9 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
         $db->prepare("DELETE FROM social_links WHERE user_id = ?")->execute([$userId]);
         
         $socialLinks = [
-            ['platform' => 'LinkedIn', 'url' => trim($_POST['linkedin'] ?? ''), 'icon' => 'fa-linkedin'],
-            ['platform' => 'GitHub', 'url' => trim($_POST['github'] ?? ''), 'icon' => 'fa-github'],
-            ['platform' => 'Custom', 'url' => trim($_POST['custom_link'] ?? ''), 'icon' => 'fa-link']
+            ['platform' => 'LinkedIn', 'url' => trim($_POST['linkedin'] ?? ''), 'icon' => 'fa-brands fa-linkedin'],
+            ['platform' => 'GitHub', 'url' => trim($_POST['github'] ?? ''), 'icon' => 'fa-brands fa-github'],
+            ['platform' => 'Custom', 'url' => trim($_POST['custom_link'] ?? ''), 'icon' => 'fa-solid fa-link']
         ];
         
         $order = 0;
@@ -170,6 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                         if (strlen($tech) > 100) {
                             $tech = substr($tech, 0, 100);
                         }
+                        if (empty($tech)) continue; // Skip empty custom values
                     }
                     
                     $stmt = $db->prepare("INSERT INTO user_technologies (user_id, category, technology_name, is_custom, display_order) VALUES (?, ?, ?, ?, ?)");
@@ -231,7 +232,7 @@ $achievementData = $db->prepare("SELECT * FROM achievements WHERE user_id = ? OR
 $achievementData->execute([$userId]);
 $achievements = $achievementData->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch user's selected technologies
+// Fetch user's selected technologies from NEW table
 $userTechData = $db->prepare("SELECT category, technology_name, is_custom FROM user_technologies WHERE user_id = ? ORDER BY category, display_order");
 $userTechData->execute([$userId]);
 $userTechnologies = [];
@@ -250,10 +251,10 @@ $socialData = $db->prepare("SELECT * FROM social_links WHERE user_id = ? ORDER B
 $socialData->execute([$userId]);
 $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
 
-// Determine initial values for dropdowns
-$hasEducation = ($userData['has_education'] ?? false) || count($educations) > 0;
-$hasExperience = ($userData['has_experience'] ?? false) || count($experiences) > 0;
-$hasAchievements = ($userData['has_achievements'] ?? false) || count($achievements) > 0;
+// **FIX: Proper initialization of dropdowns based on flags AND existing data**
+$hasEducation = ($userData['has_education'] ?? false) ? true : (count($educations) > 0);
+$hasExperience = ($userData['has_experience'] ?? false) ? true : (count($experiences) > 0);
+$hasAchievements = ($userData['has_achievements'] ?? false) ? true : (count($achievements) > 0);
 
 // Compute base path
 $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
@@ -267,8 +268,8 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Resume</title>
-    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/style.css">
     <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/resume.css">
+    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -695,6 +696,17 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
                         foreach ($categories as $category):
                             $fieldName = 'tech_' . strtolower(str_replace(' ', '_', $category));
                             $userSelectedInCategory = $userTechnologies[$category] ?? [];
+                            
+                            // Find if user has a custom "Other" value for this category
+                            $hasCustomOther = false;
+                            $customOtherValue = '';
+                            foreach ($userSelectedInCategory as $selected) {
+                                if ($selected['is_custom']) {
+                                    $hasCustomOther = true;
+                                    $customOtherValue = $selected['technology_name'];
+                                    break;
+                                }
+                            }
                         ?>
                         <div class="tech-category-section">
                             <h4 class="tech-category-title"><?php echo htmlspecialchars($category); ?></h4>
@@ -709,6 +721,12 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
                                             break;
                                         }
                                     }
+                                    
+                                    // If this is "Other" and user has custom value, check it
+                                    if ($techName === 'Other' && $hasCustomOther) {
+                                        $isChecked = true;
+                                    }
+                                    
                                     $inputId = 'tech_' . md5($category . $techName);
                                     $isOther = ($techName === 'Other');
                                 ?>
@@ -727,22 +745,14 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
                             </div>
                             
                             <!-- Custom input field for "Other" -->
-                            <div class="custom-tech-input" id="custom-<?php echo strtolower($category); ?>">
+                            <div class="custom-tech-input <?php echo $hasCustomOther ? 'active' : ''; ?>" id="custom-<?php echo strtolower($category); ?>">
                                 <label class="form-label">Custom <?php echo htmlspecialchars($category); ?> Technology</label>
                                 <input 
                                     type="text" 
                                     name="<?php echo $fieldName; ?>[]" 
                                     class="form-input" 
                                     placeholder="Enter custom technology name"
-                                    value="<?php 
-                                        // Pre-fill with custom value if exists
-                                        foreach ($userSelectedInCategory as $selected) {
-                                            if ($selected['is_custom']) {
-                                                echo htmlspecialchars('custom:' . $selected['technology_name']);
-                                                break;
-                                            }
-                                        }
-                                    ?>"
+                                    value="<?php echo $hasCustomOther ? htmlspecialchars('custom:' . $customOtherValue) : ''; ?>"
                                 >
                                 <small class="form-note">This will only be saved if "Other" is checked above.</small>
                             </div>
@@ -794,7 +804,10 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
             categories.forEach(category => {
                 const otherCheckbox = document.querySelector('input[value="Other"][name*="' + category.toLowerCase() + '"]');
                 if (otherCheckbox && otherCheckbox.checked) {
-                    toggleCustomInput(otherCheckbox, category);
+                    const customInput = document.getElementById('custom-' + category.toLowerCase());
+                    if (customInput) {
+                        customInput.classList.add('active');
+                    }
                 }
             });
         });
