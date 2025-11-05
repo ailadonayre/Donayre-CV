@@ -334,7 +334,6 @@ label, legend, fieldset {
     border-bottom: 2px solid var(--border-color);
 }
 
-/* ✅ MAIN FIX: Match padding with other cards */
 .profile-section {
     padding: 20px 30px 30px 30px;  /* Same as .tech-content, .timeline, etc. */
 }
@@ -353,7 +352,7 @@ label, legend, fieldset {
 
 .profile-subtitle {
     text-align: center;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     font-weight: 500;
     margin-bottom: 25px;
 }
@@ -362,7 +361,7 @@ label, legend, fieldset {
 .profile-details {
     margin-top: 20px;
     margin-bottom: 25px;
-    width: 100%;  /* ✅ ADD: Ensure it takes full width of parent */
+    width: 100%;
 }
 
 .detail-item {
@@ -392,7 +391,7 @@ label, legend, fieldset {
 }
 
 .detail-value {
-    color: var(--text-secondary);
+    color: var(--text-muted);
     font-weight: 400;
 }
 
@@ -551,7 +550,7 @@ label, legend, fieldset {
 }
 
 .timeline-subtitle {
-    color: var(--text-secondary);
+    color: var(--text-light);
     font-weight: 600;
     font-size: 0.9rem;
     text-transform: uppercase;

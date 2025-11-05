@@ -55,12 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
         }
         
         // Handle Education section flag
-        $hasEducation = isset($_POST['has_education']) && $_POST['has_education'] === 'yes';
+        $hasEducation = (isset($_POST['has_education']) && $_POST['has_education'] === 'yes');
         $stmt = $db->prepare("UPDATE users SET has_education = ? WHERE id = ?");
-        $stmt->execute([$hasEducation, $userId]);
-        
+        $stmt->execute([$hasEducation, $userId]); // Pass as PHP boolean
+
         $db->prepare("DELETE FROM education WHERE user_id = ?")->execute([$userId]);
-        
+
         if ($hasEducation && isset($_POST['education_degree'])) {
             foreach ($_POST['education_degree'] as $index => $degree) {
                 if (!empty(trim($degree))) {
@@ -77,12 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                 }
             }
         }
-        
+
         // Handle Experience section flag
-        $hasExperience = isset($_POST['has_experience']) && $_POST['has_experience'] === 'yes';
+        $hasExperience = (isset($_POST['has_experience']) && $_POST['has_experience'] === 'yes');
         $stmt = $db->prepare("UPDATE users SET has_experience = ? WHERE id = ?");
-        $stmt->execute([$hasExperience, $userId]);
-        
+        $stmt->execute([$hasExperience, $userId]); // Pass as PHP boolean
+
         $db->prepare("DELETE FROM experience WHERE user_id = ?")->execute([$userId]);
 
         if ($hasExperience && isset($_POST['experience_title'])) {
@@ -117,14 +117,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                 }
             }
         }
-        
+
         // Handle Achievements section flag
-        $hasAchievements = isset($_POST['has_achievements']) && $_POST['has_achievements'] === 'yes';
+        $hasAchievements = (isset($_POST['has_achievements']) && $_POST['has_achievements'] === 'yes');
         $stmt = $db->prepare("UPDATE users SET has_achievements = ? WHERE id = ?");
-        $stmt->execute([$hasAchievements, $userId]);
-        
+        $stmt->execute([$hasAchievements, $userId]); // Pass as PHP boolean
+
         $db->prepare("DELETE FROM achievements WHERE user_id = ?")->execute([$userId]);
-        
+
         if ($hasAchievements && isset($_POST['achievement_title'])) {
             foreach ($_POST['achievement_title'] as $index => $title) {
                 if (!empty(trim($title))) {
@@ -140,38 +140,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                 }
             }
         }
-        
+
         // Handle Technologies - NEW STRUCTURE
         $db->prepare("DELETE FROM user_technologies WHERE user_id = ?")->execute([$userId]);
-        
+
         // Get available categories
         $categories = ['Frontend', 'Backend', 'Databases', 'DevOps', 'Multimedia', 'Mobile', 'Testing'];
-        
+
         foreach ($categories as $category) {
             $fieldName = 'tech_' . strtolower(str_replace(' ', '_', $category));
             
             if (!empty($_POST[$fieldName]) && is_array($_POST[$fieldName])) {
                 $displayOrder = 0;
+                $hasOtherChecked = false;
+                $customValue = '';
+                
+                // First pass: check if "Other" is selected and get custom value
+                foreach ($_POST[$fieldName] as $tech) {
+                    if (trim($tech) === 'Other') {
+                        $hasOtherChecked = true;
+                    } elseif (strpos($tech, 'custom:') === 0) {
+                        $customValue = trim(substr($tech, 7));
+                    }
+                }
+                
+                // Second pass: insert technologies
                 foreach ($_POST[$fieldName] as $tech) {
                     $tech = trim($tech);
                     if (empty($tech)) continue;
                     
+                    // Skip the "custom:" entry - we'll handle it separately
+                    if (strpos($tech, 'custom:') === 0) continue;
+                    
                     $isCustom = false;
                     
-                    // Check if this is the "Other" option with custom value
-                    if (strpos($tech, 'custom:') === 0) {
-                        $tech = trim(substr($tech, 7));
-                        $isCustom = true;
-                    }
-                    
-                    // Sanitize and validate custom input
-                    if ($isCustom) {
-                        $tech = htmlspecialchars($tech, ENT_QUOTES, 'UTF-8');
+                    // If this is "Other" and we have a custom value, use the custom value instead
+                    if ($tech === 'Other' && !empty($customValue)) {
+                        $tech = htmlspecialchars($customValue, ENT_QUOTES, 'UTF-8');
                         if (strlen($tech) > 100) {
                             $tech = substr($tech, 0, 100);
                         }
-                        if (empty($tech)) continue; // Skip empty custom values
+                        $isCustom = true;
+                    } elseif ($tech === 'Other') {
+                        // "Other" is checked but no custom value provided, skip it
+                        continue;
                     }
+                    
+                    // Sanitize preset options too
+                    $tech = htmlspecialchars($tech, ENT_QUOTES, 'UTF-8');
                     
                     $stmt = $db->prepare("INSERT INTO user_technologies (user_id, category, technology_name, is_custom, display_order) VALUES (?, ?, ?, ?, ?)");
                     $stmt->execute([$userId, $category, $tech, $isCustom, $displayOrder++]);
@@ -268,8 +284,8 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Resume</title>
-    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/resume.css">
     <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/style.css">
+    <link rel="stylesheet" href="<?php echo a($basePath); ?>/css/resume.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
