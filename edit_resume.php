@@ -54,10 +54,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
             }
         }
         
-        // Handle Education
+        // Handle Education section flag
+        $hasEducation = isset($_POST['has_education']) && $_POST['has_education'] === 'yes';
+        $stmt = $db->prepare("UPDATE users SET has_education = ? WHERE id = ?");
+        $stmt->execute([$hasEducation, $userId]);
+        
         $db->prepare("DELETE FROM education WHERE user_id = ?")->execute([$userId]);
         
-        if (isset($_POST['education_degree'])) {
+        if ($hasEducation && isset($_POST['education_degree'])) {
             foreach ($_POST['education_degree'] as $index => $degree) {
                 if (!empty(trim($degree))) {
                     $stmt = $db->prepare("INSERT INTO education (user_id, degree, institution, start_date, end_date, description, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -74,10 +78,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
             }
         }
         
-        // Handle Experience
+        // Handle Experience section flag
+        $hasExperience = isset($_POST['has_experience']) && $_POST['has_experience'] === 'yes';
+        $stmt = $db->prepare("UPDATE users SET has_experience = ? WHERE id = ?");
+        $stmt->execute([$hasExperience, $userId]);
+        
         $db->prepare("DELETE FROM experience WHERE user_id = ?")->execute([$userId]);
 
-        if (isset($_POST['experience_title'])) {
+        if ($hasExperience && isset($_POST['experience_title'])) {
             foreach ($_POST['experience_title'] as $index => $title) {
                 if (!empty(trim($title))) {
                     $stmt = $db->prepare("INSERT INTO experience (user_id, job_title, company, start_date, end_date, description, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -110,10 +118,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
             }
         }
         
-        // Handle Achievements
+        // Handle Achievements section flag
+        $hasAchievements = isset($_POST['has_achievements']) && $_POST['has_achievements'] === 'yes';
+        $stmt = $db->prepare("UPDATE users SET has_achievements = ? WHERE id = ?");
+        $stmt->execute([$hasAchievements, $userId]);
+        
         $db->prepare("DELETE FROM achievements WHERE user_id = ?")->execute([$userId]);
         
-        if (isset($_POST['achievement_title'])) {
+        if ($hasAchievements && isset($_POST['achievement_title'])) {
             foreach ($_POST['achievement_title'] as $index => $title) {
                 if (!empty(trim($title))) {
                     $stmt = $db->prepare("INSERT INTO achievements (user_id, title, achievement_date, description, icon, display_order) VALUES (?, ?, ?, ?, ?, ?)");
@@ -129,28 +141,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
             }
         }
         
-        // Handle Technologies
-        $db->prepare("DELETE FROM tech_categories WHERE user_id = ?")->execute([$userId]);
+        // Handle Technologies - NEW STRUCTURE
+        $db->prepare("DELETE FROM user_technologies WHERE user_id = ?")->execute([$userId]);
         
-        if (isset($_POST['tech_category'])) {
-            foreach ($_POST['tech_category'] as $index => $category) {
-                if (!empty(trim($category))) {
-                    $stmt = $db->prepare("INSERT INTO tech_categories (user_id, category_name, display_order) VALUES (?, ?, ?)");
-                    $stmt->execute([$userId, trim($category), $index]);
+        // Get available categories
+        $categories = ['Frontend', 'Backend', 'Databases', 'DevOps', 'Multimedia', 'Mobile', 'Testing'];
+        
+        foreach ($categories as $category) {
+            $fieldName = 'tech_' . strtolower(str_replace(' ', '_', $category));
+            
+            if (!empty($_POST[$fieldName]) && is_array($_POST[$fieldName])) {
+                $displayOrder = 0;
+                foreach ($_POST[$fieldName] as $tech) {
+                    $tech = trim($tech);
+                    if (empty($tech)) continue;
                     
-                    $catId = $db->lastInsertId();
+                    $isCustom = false;
                     
-                    if (isset($_POST['tech_items'][$index])) {
-                        $technologies = array_filter(array_map('trim', explode(',', $_POST['tech_items'][$index])));
-                        $technologies = array_unique($technologies);
-                        $techOrder = 0;
-                        foreach ($technologies as $tech) {
-                            if (!empty($tech)) {
-                                $stmt = $db->prepare("INSERT INTO technologies (category_id, tech_name, display_order) VALUES (?, ?, ?)");
-                                $stmt->execute([$catId, $tech, $techOrder++]);
-                            }
+                    // Check if this is the "Other" option with custom value
+                    if (strpos($tech, 'custom:') === 0) {
+                        $tech = trim(substr($tech, 7));
+                        $isCustom = true;
+                    }
+                    
+                    // Sanitize and validate custom input
+                    if ($isCustom) {
+                        $tech = htmlspecialchars($tech, ENT_QUOTES, 'UTF-8');
+                        if (strlen($tech) > 100) {
+                            $tech = substr($tech, 0, 100);
                         }
                     }
+                    
+                    $stmt = $db->prepare("INSERT INTO user_technologies (user_id, category, technology_name, is_custom, display_order) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([$userId, $category, $tech, $isCustom, $displayOrder++]);
                 }
             }
         }
@@ -208,20 +231,29 @@ $achievementData = $db->prepare("SELECT * FROM achievements WHERE user_id = ? OR
 $achievementData->execute([$userId]);
 $achievements = $achievementData->fetchAll(PDO::FETCH_ASSOC);
 
-$techData = $db->prepare("SELECT * FROM tech_categories WHERE user_id = ? ORDER BY display_order");
-$techData->execute([$userId]);
-$techCategories = $techData->fetchAll(PDO::FETCH_ASSOC);
-
-foreach ($techCategories as &$cat) {
-    $stmt = $db->prepare("SELECT * FROM technologies WHERE category_id = ? ORDER BY display_order");
-    $stmt->execute([$cat['id']]);
-    $cat['technologies'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Fetch user's selected technologies
+$userTechData = $db->prepare("SELECT category, technology_name, is_custom FROM user_technologies WHERE user_id = ? ORDER BY category, display_order");
+$userTechData->execute([$userId]);
+$userTechnologies = [];
+foreach ($userTechData->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $userTechnologies[$row['category']][] = $row;
 }
-unset($cat);
+
+// Fetch preset technology options
+$techOptionsData = $db->query("SELECT category, name FROM technology_options WHERE is_preset = TRUE ORDER BY category, display_order");
+$techOptions = [];
+foreach ($techOptionsData->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $techOptions[$row['category']][] = $row['name'];
+}
 
 $socialData = $db->prepare("SELECT * FROM social_links WHERE user_id = ? ORDER BY display_order");
 $socialData->execute([$userId]);
 $socialLinks = $socialData->fetchAll(PDO::FETCH_ASSOC);
+
+// Determine initial values for dropdowns
+$hasEducation = ($userData['has_education'] ?? false) || count($educations) > 0;
+$hasExperience = ($userData['has_experience'] ?? false) || count($experiences) > 0;
+$hasAchievements = ($userData['has_achievements'] ?? false) || count($achievements) > 0;
 
 // Compute base path
 $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
@@ -256,6 +288,23 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
         .icon-option:hover { border-color: var(--accent-color); transform: scale(1.1); }
         .icon-option.selected { background: var(--accent-color); color: white; border-color: var(--accent-color); }
         .form-note { display: block; margin-top: 5px; font-size: 0.85rem; color: var(--text-muted); font-style: italic; }
+        .section-toggle { margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 8px; border: 2px solid var(--border-color); }
+        .section-toggle label { font-weight: 700; color: var(--text-primary); margin-right: 10px; }
+        .section-toggle select { padding: 8px 12px; border-radius: 6px; border: 2px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-weight: 600; cursor: pointer; }
+        .section-content { display: none; }
+        .section-content.active { display: block; }
+        .no-data-message { padding: 15px; background: rgba(239, 35, 60, 0.1); border: 2px solid rgba(239, 35, 60, 0.3); border-radius: 8px; color: var(--accent-color); font-weight: 600; text-align: center; }
+        
+        .tech-category-section { margin-bottom: 25px; padding: 20px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); }
+        .tech-category-title { font-weight: 700; color: var(--accent-color); margin-bottom: 15px; font-size: 1.1rem; }
+        .tech-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+        .tech-checkbox-item { display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color); transition: all 0.3s; }
+        .tech-checkbox-item:hover { background: var(--bg-secondary); border-color: var(--accent-color); }
+        .tech-checkbox-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        .tech-checkbox-item label { cursor: pointer; font-weight: 500; color: var(--text-primary); flex: 1; }
+        .custom-tech-input { margin-top: 10px; display: none; }
+        .custom-tech-input.active { display: block; }
+        .custom-tech-input input { width: 100%; padding: 10px; border-radius: 6px; border: 2px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); }
     </style>
 </head>
 <body>
@@ -343,64 +392,79 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
                         </div>
                     </div>
 
-                    <!-- Education -->
+                    <!-- Education Section with Yes/No Toggle -->
                     <div class="form-section">
                         <h3 class="section-title"><i class="fa-solid fa-graduation-cap"></i> Education</h3>
-                        <div id="education-container">
-                            <?php if (empty($educations)): ?>
-                                <div class="repeater-item">
-                                    <div class="form-group">
-                                        <label class="form-label">Degree Program *</label>
-                                        <input type="text" name="education_degree[]" class="form-input" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Institution *</label>
-                                        <input type="text" name="education_institution[]" class="form-input" required>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label class="form-label">Start Date</label>
-                                            <input type="text" name="education_start[]" class="form-input" placeholder="2023">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">End Date</label>
-                                            <input type="text" name="education_end[]" class="form-input" placeholder="Present">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Description</label>
-                                        <textarea name="education_description[]" class="form-textarea" rows="3"></textarea>
-                                    </div>
-                                </div>
-                            <?php else: foreach ($educations as $edu): ?>
-                                <div class="repeater-item">
-                                    <div class="form-group">
-                                        <label class="form-label">Degree Program *</label>
-                                        <input type="text" name="education_degree[]" class="form-input" value="<?php echo htmlspecialchars($edu['degree']); ?>" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Institution *</label>
-                                        <input type="text" name="education_institution[]" class="form-input" value="<?php echo htmlspecialchars($edu['institution']); ?>" required>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label class="form-label">Start Date</label>
-                                            <input type="text" name="education_start[]" class="form-input" value="<?php echo htmlspecialchars($edu['start_date']); ?>">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">End Date</label>
-                                            <input type="text" name="education_end[]" class="form-input" value="<?php echo htmlspecialchars($edu['end_date']); ?>">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Description</label>
-                                        <textarea name="education_description[]" class="form-textarea" rows="3"><?php echo htmlspecialchars($edu['description']); ?></textarea>
-                                    </div>
-                                    <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
-                                </div>
-                            <?php endforeach; endif; ?>
+                        
+                        <div class="section-toggle">
+                            <label for="has_education">Do you have any Education?</label>
+                            <select name="has_education" id="has_education" onchange="toggleSection('education', this.value)">
+                                <option value="no" <?php echo !$hasEducation ? 'selected' : ''; ?>>No</option>
+                                <option value="yes" <?php echo $hasEducation ? 'selected' : ''; ?>>Yes</option>
+                            </select>
                         </div>
-                        <button type="button" class="btn-add" onclick="addEducation()"><i class="fa-solid fa-plus"></i> Add Education</button>
+                        
+                        <div id="education-section-content" class="section-content <?php echo $hasEducation ? 'active' : ''; ?>">
+                            <div id="education-container">
+                                <?php if (empty($educations)): ?>
+                                    <div class="repeater-item">
+                                        <div class="form-group">
+                                            <label class="form-label">Degree Program *</label>
+                                            <input type="text" name="education_degree[]" class="form-input" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Institution *</label>
+                                            <input type="text" name="education_institution[]" class="form-input" required>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label class="form-label">Start Date</label>
+                                                <input type="text" name="education_start[]" class="form-input" placeholder="2023">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">End Date</label>
+                                                <input type="text" name="education_end[]" class="form-input" placeholder="Present">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Description</label>
+                                            <textarea name="education_description[]" class="form-textarea" rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                <?php else: foreach ($educations as $edu): ?>
+                                    <div class="repeater-item">
+                                        <div class="form-group">
+                                            <label class="form-label">Degree Program *</label>
+                                            <input type="text" name="education_degree[]" class="form-input" value="<?php echo htmlspecialchars($edu['degree']); ?>" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Institution *</label>
+                                            <input type="text" name="education_institution[]" class="form-input" value="<?php echo htmlspecialchars($edu['institution']); ?>" required>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label class="form-label">Start Date</label>
+                                                <input type="text" name="education_start[]" class="form-input" value="<?php echo htmlspecialchars($edu['start_date']); ?>">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">End Date</label>
+                                                <input type="text" name="education_end[]" class="form-input" value="<?php echo htmlspecialchars($edu['end_date']); ?>">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Description</label>
+                                            <textarea name="education_description[]" class="form-textarea" rows="3"><?php echo htmlspecialchars($edu['description']); ?></textarea>
+                                        </div>
+                                        <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+                                    </div>
+                                <?php endforeach; endif; ?>
+                            </div>
+                            <button type="button" class="btn-add" onclick="addEducation()"><i class="fa-solid fa-plus"></i> Add Education</button>
+                        </div>
+                        
+                        <div id="education-no-data" class="no-data-message" style="display: <?php echo !$hasEducation ? 'block' : 'none'; ?>;">
+                            No education entries will be displayed on your resume.
+                        </div>
                     </div>
 
                     <!-- Global Experience Traits -->
@@ -449,178 +513,241 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
                         </div>
                     </div>
 
-                    <!-- Experience -->
+                    <!-- Experience Section with Yes/No Toggle -->
                     <div class="form-section">
                         <h3 class="section-title"><i class="fa-solid fa-briefcase"></i> Experience</h3>
-                        <div id="experience-container">
-                            <?php if (empty($experiences)): ?>
-                                <div class="repeater-item">
-                                    <div class="form-group">
-                                        <label class="form-label">Job Title/Position</label>
-                                        <input type="text" name="experience_title[]" class="form-input">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Company/Project</label>
-                                        <input type="text" name="experience_company[]" class="form-input">
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label class="form-label">Start Date</label>
-                                            <input type="text" name="experience_start[]" class="form-input" placeholder="Jan 2023">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">End Date</label>
-                                            <input type="text" name="experience_end[]" class="form-input" placeholder="Present">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Description</label>
-                                        <textarea name="experience_description[]" class="form-textarea" rows="3"></textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Keywords (comma-separated)</label>
-                                        <input type="text" name="experience_keywords[]" class="form-input" placeholder="e.g., Machine Learning, Data Visualization, Analytics">
-                                        <small class="form-note">Enter keywords separated by commas. They will display as tags under the description.</small>
-                                    </div>
-                                </div>
-                            <?php else: foreach ($experiences as $expIndex => $exp): ?>
-                                <div class="repeater-item">
-                                    <div class="form-group">
-                                        <label class="form-label">Job Title/Position</label>
-                                        <input type="text" name="experience_title[]" class="form-input" value="<?php echo htmlspecialchars($exp['job_title']); ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Company/Project</label>
-                                        <input type="text" name="experience_company[]" class="form-input" value="<?php echo htmlspecialchars($exp['company']); ?>">
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label class="form-label">Start Date</label>
-                                            <input type="text" name="experience_start[]" class="form-input" value="<?php echo htmlspecialchars($exp['start_date']); ?>">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">End Date</label>
-                                            <input type="text" name="experience_end[]" class="form-input" value="<?php echo htmlspecialchars($exp['end_date']); ?>">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Description</label>
-                                        <textarea name="experience_description[]" class="form-textarea" rows="3"><?php echo htmlspecialchars($exp['description']); ?></textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Keywords (comma-separated)</label>
-                                        <input type="text" name="experience_keywords[<?php echo $expIndex; ?>]" class="form-input" value="<?php echo htmlspecialchars(implode(', ', $exp['keywords'])); ?>" placeholder="e.g., Machine Learning, Data Visualization, Analytics">
-                                        <small class="form-note">Enter keywords separated by commas. They will display as tags under the description.</small>
-                                    </div>
-                                    <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
-                                </div>
-                            <?php endforeach; endif; ?>
+                        
+                        <div class="section-toggle">
+                            <label for="has_experience">Do you have any Experience?</label>
+                            <select name="has_experience" id="has_experience" onchange="toggleSection('experience', this.value)">
+                                <option value="no" <?php echo !$hasExperience ? 'selected' : ''; ?>>No</option>
+                                <option value="yes" <?php echo $hasExperience ? 'selected' : ''; ?>>Yes</option>
+                            </select>
                         </div>
-                        <button type="button" class="btn-add" onclick="addExperience()"><i class="fa-solid fa-plus"></i> Add Experience</button>
+                        
+                        <div id="experience-section-content" class="section-content <?php echo $hasExperience ? 'active' : ''; ?>">
+                            <div id="experience-container">
+                                <?php if (empty($experiences)): ?>
+                                    <div class="repeater-item">
+                                        <div class="form-group">
+                                            <label class="form-label">Job Title/Position</label>
+                                            <input type="text" name="experience_title[]" class="form-input">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Company/Project</label>
+                                            <input type="text" name="experience_company[]" class="form-input">
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label class="form-label">Start Date</label>
+                                                <input type="text" name="experience_start[]" class="form-input" placeholder="Jan 2023">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">End Date</label>
+                                                <input type="text" name="experience_end[]" class="form-input" placeholder="Present">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Description</label>
+                                            <textarea name="experience_description[]" class="form-textarea" rows="3"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Keywords (comma-separated)</label>
+                                            <input type="text" name="experience_keywords[]" class="form-input" placeholder="e.g., Machine Learning, Data Visualization, Analytics">
+                                            <small class="form-note">Enter keywords separated by commas. They will display as tags under the description.</small>
+                                        </div>
+                                    </div>
+                                <?php else: foreach ($experiences as $expIndex => $exp): ?>
+                                    <div class="repeater-item">
+                                        <div class="form-group">
+                                            <label class="form-label">Job Title/Position</label>
+                                            <input type="text" name="experience_title[]" class="form-input" value="<?php echo htmlspecialchars($exp['job_title']); ?>">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Company/Project</label>
+                                            <input type="text" name="experience_company[]" class="form-input" value="<?php echo htmlspecialchars($exp['company']); ?>">
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label class="form-label">Start Date</label>
+                                                <input type="text" name="experience_start[]" class="form-input" value="<?php echo htmlspecialchars($exp['start_date']); ?>">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">End Date</label>
+                                                <input type="text" name="experience_end[]" class="form-input" value="<?php echo htmlspecialchars($exp['end_date']); ?>">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Description</label>
+                                            <textarea name="experience_description[]" class="form-textarea" rows="3"><?php echo htmlspecialchars($exp['description']); ?></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Keywords (comma-separated)</label>
+                                            <input type="text" name="experience_keywords[<?php echo $expIndex; ?>]" class="form-input" value="<?php echo htmlspecialchars(implode(', ', $exp['keywords'])); ?>" placeholder="e.g., Machine Learning, Data Visualization, Analytics">
+                                            <small class="form-note">Enter keywords separated by commas. They will display as tags under the description.</small>
+                                        </div>
+                                        <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+                                    </div>
+                                <?php endforeach; endif; ?>
+                            </div>
+                            <button type="button" class="btn-add" onclick="addExperience()"><i class="fa-solid fa-plus"></i> Add Experience</button>
+                        </div>
+                        
+                        <div id="experience-no-data" class="no-data-message" style="display: <?php echo !$hasExperience ? 'block' : 'none'; ?>;">
+                            No experience entries will be displayed on your resume.
+                        </div>
                     </div>
 
-                    <!-- Achievements -->
+                    <!-- Achievements Section with Yes/No Toggle -->
                     <div class="form-section">
                         <h3 class="section-title"><i class="fa-solid fa-trophy"></i> Achievements</h3>
-                        <div id="achievement-container">
-                            <?php if (empty($achievements)): ?>
-                                <div class="repeater-item">
-                                    <div class="form-group">
-                                        <label class="form-label">Achievement Title</label>
-                                        <input type="text" name="achievement_title[]" class="form-input">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Date</label>
-                                        <input type="text" name="achievement_date[]" class="form-input" placeholder="2024">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Description</label>
-                                        <textarea name="achievement_description[]" class="form-textarea" rows="3"></textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Select Icon</label>
-                                        <div class="icon-selector">
-                                            <?php
-                                            $icons = ['fa-trophy', 'fa-medal', 'fa-certificate', 'fa-award', 'fa-star', 'fa-code'];
-                                            foreach ($icons as $idx => $icon):
-                                            ?>
-                                                <div class="icon-option <?php echo $idx === 0 ? 'selected' : ''; ?>" data-icon="<?php echo $icon; ?>" onclick="selectIcon(this)">
-                                                    <i class="fa-solid <?php echo $icon; ?>"></i>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                        <input type="hidden" name="achievement_icon[]" value="fa-trophy" class="icon-input">
-                                    </div>
-                                </div>
-                            <?php else: foreach ($achievements as $ach): ?>
-                                <div class="repeater-item">
-                                    <div class="form-group">
-                                        <label class="form-label">Achievement Title</label>
-                                        <input type="text" name="achievement_title[]" class="form-input" value="<?php echo htmlspecialchars($ach['title']); ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Date</label>
-                                        <input type="text" name="achievement_date[]" class="form-input" value="<?php echo htmlspecialchars($ach['achievement_date']); ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Description</label>
-                                        <textarea name="achievement_description[]" class="form-textarea" rows="3"><?php echo htmlspecialchars($ach['description']); ?></textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Select Icon</label>
-                                        <div class="icon-selector">
-                                            <?php
-                                            $icons = ['fa-trophy', 'fa-medal', 'fa-certificate', 'fa-award', 'fa-star', 'fa-code'];
-                                            foreach ($icons as $icon):
-                                                $isSelected = ($icon == $ach['icon']) ? 'selected' : '';
-                                            ?>
-                                                <div class="icon-option <?php echo $isSelected; ?>" data-icon="<?php echo $icon; ?>" onclick="selectIcon(this)">
-                                                    <i class="fa-solid <?php echo $icon; ?>"></i>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                        <input type="hidden" name="achievement_icon[]" value="<?php echo htmlspecialchars($ach['icon']); ?>" class="icon-input">
-                                    </div>
-                                    <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
-                                </div>
-                            <?php endforeach; endif; ?>
+                        
+                        <div class="section-toggle">
+                            <label for="has_achievements">Do you have any Achievements?</label>
+                            <select name="has_achievements" id="has_achievements" onchange="toggleSection('achievements', this.value)">
+                                <option value="no" <?php echo !$hasAchievements ? 'selected' : ''; ?>>No</option>
+                                <option value="yes" <?php echo $hasAchievements ? 'selected' : ''; ?>>Yes</option>
+                            </select>
                         </div>
-                        <button type="button" class="btn-add" onclick="addAchievement()"><i class="fa-solid fa-plus"></i> Add Achievement</button>
+                        
+                        <div id="achievements-section-content" class="section-content <?php echo $hasAchievements ? 'active' : ''; ?>">
+                            <div id="achievement-container">
+                                <?php if (empty($achievements)): ?>
+                                    <div class="repeater-item">
+                                        <div class="form-group">
+                                            <label class="form-label">Achievement Title</label>
+                                            <input type="text" name="achievement_title[]" class="form-input">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Date</label>
+                                            <input type="text" name="achievement_date[]" class="form-input" placeholder="2024">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Description</label>
+                                            <textarea name="achievement_description[]" class="form-textarea" rows="3"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Select Icon</label>
+                                            <div class="icon-selector">
+                                                <?php
+                                                $icons = ['fa-trophy', 'fa-medal', 'fa-certificate', 'fa-award', 'fa-star', 'fa-code'];
+                                                foreach ($icons as $idx => $icon):
+                                                ?>
+                                                    <div class="icon-option <?php echo $idx === 0 ? 'selected' : ''; ?>" data-icon="<?php echo $icon; ?>" onclick="selectIcon(this)">
+                                                        <i class="fa-solid <?php echo $icon; ?>"></i>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                            <input type="hidden" name="achievement_icon[]" value="fa-trophy" class="icon-input">
+                                        </div>
+                                    </div>
+                                <?php else: foreach ($achievements as $ach): ?>
+                                    <div class="repeater-item">
+                                        <div class="form-group">
+                                            <label class="form-label">Achievement Title</label>
+                                            <input type="text" name="achievement_title[]" class="form-input" value="<?php echo htmlspecialchars($ach['title']); ?>">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Date</label>
+                                            <input type="text" name="achievement_date[]" class="form-input" value="<?php echo htmlspecialchars($ach['achievement_date']); ?>">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Description</label>
+                                            <textarea name="achievement_description[]" class="form-textarea" rows="3"><?php echo htmlspecialchars($ach['description']); ?></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Select Icon</label>
+                                            <div class="icon-selector">
+                                                <?php
+                                                $icons = ['fa-trophy', 'fa-medal', 'fa-certificate', 'fa-award', 'fa-star', 'fa-code'];
+                                                foreach ($icons as $icon):
+                                                    $isSelected = ($icon == $ach['icon']) ? 'selected' : '';
+                                                ?>
+                                                    <div class="icon-option <?php echo $isSelected; ?>" data-icon="<?php echo $icon; ?>" onclick="selectIcon(this)">
+                                                        <i class="fa-solid <?php echo $icon; ?>"></i>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                            <input type="hidden" name="achievement_icon[]" value="<?php echo htmlspecialchars($ach['icon']); ?>" class="icon-input">
+                                        </div>
+                                        <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+                                    </div>
+                                <?php endforeach; endif; ?>
+                            </div>
+                            <button type="button" class="btn-add" onclick="addAchievement()"><i class="fa-solid fa-plus"></i> Add Achievement</button>
+                        </div>
+                        
+                        <div id="achievements-no-data" class="no-data-message" style="display: <?php echo !$hasAchievements ? 'block' : 'none'; ?>;">
+                            No achievement entries will be displayed on your resume.
+                        </div>
                     </div>
 
-                    <!-- Technologies -->
+                    <!-- Technologies Section with Multi-Select -->
                     <div class="form-section">
                         <h3 class="section-title"><i class="fa-solid fa-laptop-code"></i> Technologies</h3>
                         <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">
-                            <i class="fa-solid fa-info-circle"></i> Add categories like Frontend, Backend, Database, Multimedia, etc.
+                            <i class="fa-solid fa-info-circle"></i> Select technologies from predefined categories or add custom ones.
                         </p>
-                        <div id="tech-container">
-                            <?php if (empty($techCategories)): ?>
-                                <div class="repeater-item">
-                                    <div class="form-group">
-                                        <label class="form-label">Category Name</label>
-                                        <input type="text" name="tech_category[]" class="form-input" placeholder="e.g., Frontend, Backend, Multimedia">
+                        
+                        <?php
+                        $categories = ['Frontend', 'Backend', 'Databases', 'DevOps', 'Multimedia', 'Mobile', 'Testing'];
+                        
+                        foreach ($categories as $category):
+                            $fieldName = 'tech_' . strtolower(str_replace(' ', '_', $category));
+                            $userSelectedInCategory = $userTechnologies[$category] ?? [];
+                        ?>
+                        <div class="tech-category-section">
+                            <h4 class="tech-category-title"><?php echo htmlspecialchars($category); ?></h4>
+                            <div class="tech-checkboxes">
+                                <?php
+                                $options = $techOptions[$category] ?? [];
+                                foreach ($options as $techName):
+                                    $isChecked = false;
+                                    foreach ($userSelectedInCategory as $selected) {
+                                        if ($selected['technology_name'] === $techName && !$selected['is_custom']) {
+                                            $isChecked = true;
+                                            break;
+                                        }
+                                    }
+                                    $inputId = 'tech_' . md5($category . $techName);
+                                    $isOther = ($techName === 'Other');
+                                ?>
+                                    <div class="tech-checkbox-item">
+                                        <input 
+                                            type="checkbox" 
+                                            id="<?php echo $inputId; ?>" 
+                                            name="<?php echo $fieldName; ?>[]" 
+                                            value="<?php echo htmlspecialchars($techName); ?>"
+                                            <?php echo $isChecked ? 'checked' : ''; ?>
+                                            <?php echo $isOther ? 'onchange="toggleCustomInput(this, \'' . $category . '\')"' : ''; ?>
+                                        >
+                                        <label for="<?php echo $inputId; ?>"><?php echo htmlspecialchars($techName); ?></label>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Technologies (comma-separated)</label>
-                                        <input type="text" name="tech_items[]" class="form-input" placeholder="HTML5, CSS3, JavaScript">
-                                    </div>
-                                </div>
-                            <?php else: foreach ($techCategories as $cat): ?>
-                                <div class="repeater-item">
-                                    <div class="form-group">
-                                        <label class="form-label">Category Name</label>
-                                        <input type="text" name="tech_category[]" class="form-input" value="<?php echo htmlspecialchars($cat['category_name']); ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Technologies (comma-separated)</label>
-                                        <input type="text" name="tech_items[]" class="form-input" value="<?php echo htmlspecialchars(implode(', ', array_column($cat['technologies'], 'tech_name'))); ?>">
-                                    </div>
-                                    <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
-                                </div>
-                            <?php endforeach; endif; ?>
+                                <?php endforeach; ?>
+                            </div>
+                            
+                            <!-- Custom input field for "Other" -->
+                            <div class="custom-tech-input" id="custom-<?php echo strtolower($category); ?>">
+                                <label class="form-label">Custom <?php echo htmlspecialchars($category); ?> Technology</label>
+                                <input 
+                                    type="text" 
+                                    name="<?php echo $fieldName; ?>[]" 
+                                    class="form-input" 
+                                    placeholder="Enter custom technology name"
+                                    value="<?php 
+                                        // Pre-fill with custom value if exists
+                                        foreach ($userSelectedInCategory as $selected) {
+                                            if ($selected['is_custom']) {
+                                                echo htmlspecialchars('custom:' . $selected['technology_name']);
+                                                break;
+                                            }
+                                        }
+                                    ?>"
+                                >
+                                <small class="form-note">This will only be saved if "Other" is checked above.</small>
+                            </div>
                         </div>
-                        <button type="button" class="btn-add" onclick="addTech()"><i class="fa-solid fa-plus"></i> Add Category</button>
+                        <?php endforeach; ?>
                     </div>
 
                     <div class="form-actions">
@@ -634,17 +761,46 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
 
     <script src="<?php echo a($basePath); ?>/js/script.js"></script>
     <script>
-        let expCounter = <?php echo count($experiences); ?>;
+        // Section toggle logic
+        function toggleSection(sectionName, value) {
+            const content = document.getElementById(sectionName + '-section-content');
+            const noData = document.getElementById(sectionName + '-no-data');
+            
+            if (value === 'yes') {
+                content.classList.add('active');
+                if (noData) noData.style.display = 'none';
+            } else {
+                content.classList.remove('active');
+                if (noData) noData.style.display = 'block';
+            }
+        }
+        
+        // Custom tech input toggle
+        function toggleCustomInput(checkbox, category) {
+            const customInput = document.getElementById('custom-' + category.toLowerCase());
+            if (checkbox.checked) {
+                customInput.classList.add('active');
+            } else {
+                customInput.classList.remove('active');
+                // Clear the custom input value
+                const input = customInput.querySelector('input');
+                if (input) input.value = '';
+            }
+        }
+        
+        // Initialize custom inputs on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const categories = ['Frontend', 'Backend', 'Databases', 'DevOps', 'Multimedia', 'Mobile', 'Testing'];
+            categories.forEach(category => {
+                const otherCheckbox = document.querySelector('input[value="Other"][name*="' + category.toLowerCase() + '"]');
+                if (otherCheckbox && otherCheckbox.checked) {
+                    toggleCustomInput(otherCheckbox, category);
+                }
+            });
+        });
         
         function removeItem(btn) {
             const container = btn.closest('.repeater-item');
-            const parent = container.parentElement;
-            
-            if (parent.id === 'education-container' && parent.children.length === 1) {
-                alert('At least one education entry is required!');
-                return;
-            }
-            
             container.remove();
         }
         
@@ -715,7 +871,6 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
                 </div>
             `;
             container.insertAdjacentHTML('beforeend', html);
-            expCounter++;
         }
         
         function addAchievement() {
@@ -757,24 +912,6 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
                             </div>
                         </div>
                         <input type="hidden" name="achievement_icon[]" value="fa-trophy" class="icon-input">
-                    </div>
-                    <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', html);
-        }
-        
-        function addTech() {
-            const container = document.getElementById('tech-container');
-            const html = `
-                <div class="repeater-item">
-                    <div class="form-group">
-                        <label class="form-label">Category Name</label>
-                        <input type="text" name="tech_category[]" class="form-input" placeholder="e.g., Frontend, Backend, Multimedia">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Technologies (comma-separated)</label>
-                        <input type="text" name="tech_items[]" class="form-input" placeholder="HTML5, CSS3, JavaScript">
                     </div>
                     <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
                 </div>
