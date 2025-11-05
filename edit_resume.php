@@ -11,7 +11,50 @@ $userId = $currentUser['id'];
 $error = '';
 $success = $sessionManager->getFlash('success');
 
-// ✅ Helper function to convert any value to proper boolean for PostgreSQL
+function sanitize_input($value) {
+    return trim($value ?? '');
+}
+
+function validate_length($value, $maxLength, $fieldName) {
+    $length = mb_strlen($value, 'UTF-8');
+    if ($length > $maxLength) {
+        return "'{$fieldName}' exceeds maximum length of {$maxLength} characters (current: {$length})";
+    }
+    return null;
+}
+
+function validate_required($value, $fieldName) {
+    if (empty($value)) {
+        return "'{$fieldName}' is required";
+    }
+    return null;
+}
+
+function validate_email($email) {
+    if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return "'Email' must be a valid email address";
+    }
+    return null;
+}
+
+function validate_integer($value, $min, $max, $fieldName) {
+    if (!is_numeric($value)) {
+        return "'{$fieldName}' must be a number";
+    }
+    $intValue = (int)$value;
+    if ($intValue < $min || $intValue > $max) {
+        return "'{$fieldName}' must be between {$min} and {$max}";
+    }
+    return null;
+}
+
+function validate_url($url) {
+    if (!empty($url) && !filter_var($url, FILTER_VALIDATE_URL)) {
+        return "'URL' must be a valid URL starting with http:// or https://";
+    }
+    return null;
+}
+
 function toPostgresBool($value) {
     if ($value === true || $value === 't' || $value === '1' || $value === 1 || $value === 'true') {
         return true;
@@ -19,10 +62,9 @@ function toPostgresBool($value) {
     if ($value === false || $value === 'f' || $value === '0' || $value === 0 || $value === 'false' || $value === '' || $value === null) {
         return false;
     }
-    return false; // Default to false for any unexpected value
+    return false;
 }
 
-// Fetch current user data
 try {
     $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
     $stmt->execute([$userId]);
@@ -31,221 +73,326 @@ try {
     $error = "Failed to load data: " . $e->getMessage();
 }
 
-// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
-    try {
-        $db->beginTransaction();
-        
-        // Update basic personal information
-        $stmt = $db->prepare("UPDATE users SET fullname = ?, title = ?, email = ?, contact = ?, address = ?, age = ? WHERE id = ?");
-        $stmt->execute([
-            trim($_POST['fullname']),
-            trim($_POST['title']),
-            trim($_POST['email']),
-            trim($_POST['contact']),
-            trim($_POST['address']),
-            trim($_POST['age']),
-            $userId
-        ]);
-        
-        // Handle Social Links
-        $db->prepare("DELETE FROM social_links WHERE user_id = ?")->execute([$userId]);
-        
-        $socialLinks = [
-            ['platform' => 'LinkedIn', 'url' => trim($_POST['linkedin'] ?? ''), 'icon' => 'fa-brands fa-linkedin'],
-            ['platform' => 'GitHub', 'url' => trim($_POST['github'] ?? ''), 'icon' => 'fa-brands fa-github'],
-            ['platform' => 'Custom', 'url' => trim($_POST['custom_link'] ?? ''), 'icon' => 'fa-solid fa-link']
-        ];
-        
-        $order = 0;
-        foreach ($socialLinks as $link) {
-            if (!empty($link['url'])) {
-                $stmt = $db->prepare("INSERT INTO social_links (user_id, platform, url, icon, display_order) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$userId, $link['platform'], $link['url'], $link['icon'], $order++]);
+    $validationErrors = [];
+    
+    // Sanitize all inputs
+    $fullname = sanitize_input($_POST['fullname']);
+    $title = sanitize_input($_POST['title']);
+    $email = sanitize_input($_POST['email']);
+    $contact = sanitize_input($_POST['contact']);
+    $address = sanitize_input($_POST['address']);
+    $age = sanitize_input($_POST['age']);
+    
+    if ($err = validate_required($fullname, 'Full Name')) $validationErrors[] = $err;
+    if ($err = validate_required($email, 'Email')) $validationErrors[] = $err;
+    if ($err = validate_required($address, 'Address')) $validationErrors[] = $err;
+    if ($err = validate_required($age, 'Age')) $validationErrors[] = $err;
+    
+    if ($err = validate_length($fullname, 100, 'Full Name')) $validationErrors[] = $err;
+    if ($err = validate_length($title, 100, 'Title')) $validationErrors[] = $err;
+    if ($err = validate_length($email, 100, 'Email')) $validationErrors[] = $err;
+    if ($err = validate_length($contact, 50, 'Contact')) $validationErrors[] = $err;
+    if ($err = validate_length($address, 255, 'Address')) $validationErrors[] = $err;
+    
+    if ($err = validate_email($email)) $validationErrors[] = $err;
+    
+    if ($err = validate_integer($age, 0, 150, 'Age')) $validationErrors[] = $err;
+    
+    $linkedin = sanitize_input($_POST['linkedin'] ?? '');
+    $github = sanitize_input($_POST['github'] ?? '');
+    $custom_link = sanitize_input($_POST['custom_link'] ?? '');
+    
+    if ($err = validate_length($linkedin, 255, 'LinkedIn URL')) $validationErrors[] = $err;
+    if ($err = validate_length($github, 255, 'GitHub URL')) $validationErrors[] = $err;
+    if ($err = validate_length($custom_link, 255, 'Custom Link URL')) $validationErrors[] = $err;
+    
+    if ($err = validate_url($linkedin)) $validationErrors[] = $err;
+    if ($err = validate_url($github)) $validationErrors[] = $err;
+    if ($err = validate_url($custom_link)) $validationErrors[] = $err;
+    
+    if (isset($_POST['education_degree']) && is_array($_POST['education_degree'])) {
+        foreach ($_POST['education_degree'] as $index => $degree) {
+            $degree = sanitize_input($degree);
+            $institution = sanitize_input($_POST['education_institution'][$index] ?? '');
+            $edu_start = sanitize_input($_POST['education_start'][$index] ?? '');
+            $edu_end = sanitize_input($_POST['education_end'][$index] ?? '');
+            $edu_desc = sanitize_input($_POST['education_description'][$index] ?? '');
+            
+            if (!empty($degree)) {
+                if ($err = validate_length($degree, 200, "Education Degree #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($institution, 200, "Education Institution #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($edu_start, 50, "Education Start Date #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($edu_end, 50, "Education End Date #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($edu_desc, 2000, "Education Description #" . ($index + 1))) $validationErrors[] = $err;
             }
         }
+    }
+    
+    if (isset($_POST['experience_title']) && is_array($_POST['experience_title'])) {
+        foreach ($_POST['experience_title'] as $index => $exp_title) {
+            $exp_title = sanitize_input($exp_title);
+            $exp_company = sanitize_input($_POST['experience_company'][$index] ?? '');
+            $exp_start = sanitize_input($_POST['experience_start'][$index] ?? '');
+            $exp_end = sanitize_input($_POST['experience_end'][$index] ?? '');
+            $exp_desc = sanitize_input($_POST['experience_description'][$index] ?? '');
+            $exp_keywords = sanitize_input($_POST['experience_keywords'][$index] ?? '');
+            
+            if (!empty($exp_title)) {
+                if ($err = validate_length($exp_title, 200, "Experience Title #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($exp_company, 200, "Experience Company #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($exp_start, 50, "Experience Start Date #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($exp_end, 50, "Experience End Date #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($exp_desc, 2000, "Experience Description #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($exp_keywords, 500, "Experience Keywords #" . ($index + 1))) $validationErrors[] = $err;
+            }
+        }
+    }
+    
+    if (isset($_POST['achievement_title']) && is_array($_POST['achievement_title'])) {
+        foreach ($_POST['achievement_title'] as $index => $ach_title) {
+            $ach_title = sanitize_input($ach_title);
+            $ach_date = sanitize_input($_POST['achievement_date'][$index] ?? '');
+            $ach_desc = sanitize_input($_POST['achievement_description'][$index] ?? '');
+            $ach_icon = sanitize_input($_POST['achievement_icon'][$index] ?? 'fa-trophy');
+            
+            if (!empty($ach_title)) {
+                if ($err = validate_length($ach_title, 200, "Achievement Title #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($ach_date, 50, "Achievement Date #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($ach_desc, 2000, "Achievement Description #" . ($index + 1))) $validationErrors[] = $err;
+                if ($err = validate_length($ach_icon, 50, "Achievement Icon #" . ($index + 1))) $validationErrors[] = $err;
+            }
+        }
+    }
+    
+    if (!empty($validationErrors)) {
+        $error = implode('<br>', $validationErrors);
+    } else {
         
-        // ✅ FIXED: Handle Education section flag - convert "yes"/"no" to boolean
-        $hasEducation = toPostgresBool(isset($_POST['has_education']) && $_POST['has_education'] === 'yes');
-        $stmt = $db->prepare("UPDATE users SET has_education = ? WHERE id = ?");
-        $stmt->bindValue(1, $hasEducation, PDO::PARAM_BOOL);
-        $stmt->bindValue(2, $userId, PDO::PARAM_INT);
-        $stmt->execute();
-
-        $db->prepare("DELETE FROM education WHERE user_id = ?")->execute([$userId]);
-
-        if ($hasEducation && isset($_POST['education_degree'])) {
-            foreach ($_POST['education_degree'] as $index => $degree) {
-                if (!empty(trim($degree))) {
-                    $stmt = $db->prepare("INSERT INTO education (user_id, degree, institution, start_date, end_date, description, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([
-                        $userId,
-                        trim($degree),
-                        trim($_POST['education_institution'][$index] ?? ''),
-                        trim($_POST['education_start'][$index] ?? ''),
-                        trim($_POST['education_end'][$index] ?? ''),
-                        trim($_POST['education_description'][$index] ?? ''),
-                        $index
-                    ]);
+        try {
+            $db->beginTransaction();
+            
+            // Update basic personal information with NULL for empty optional fields
+            $stmt = $db->prepare("UPDATE users SET fullname = ?, title = ?, email = ?, contact = ?, address = ?, age = ? WHERE id = ?");
+            $stmt->bindValue(1, $fullname, PDO::PARAM_STR);
+            $stmt->bindValue(2, !empty($title) ? $title : null, !empty($title) ? PDO::PARAM_STR : PDO::PARAM_NULL);
+            $stmt->bindValue(3, $email, PDO::PARAM_STR);
+            $stmt->bindValue(4, !empty($contact) ? $contact : null, !empty($contact) ? PDO::PARAM_STR : PDO::PARAM_NULL);
+            $stmt->bindValue(5, $address, PDO::PARAM_STR);
+            $stmt->bindValue(6, (int)$age, PDO::PARAM_INT);
+            $stmt->bindValue(7, $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            // Handle Social Links
+            $db->prepare("DELETE FROM social_links WHERE user_id = ?")->execute([$userId]);
+            
+            $socialLinks = [
+                ['platform' => 'LinkedIn', 'url' => $linkedin, 'icon' => 'fa-brands fa-linkedin'],
+                ['platform' => 'GitHub', 'url' => $github, 'icon' => 'fa-brands fa-github'],
+                ['platform' => 'Custom', 'url' => $custom_link, 'icon' => 'fa-solid fa-link']
+            ];
+            
+            $order = 0;
+            foreach ($socialLinks as $link) {
+                if (!empty($link['url'])) {
+                    $stmt = $db->prepare("INSERT INTO social_links (user_id, platform, url, icon, display_order) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([$userId, $link['platform'], $link['url'], $link['icon'], $order++]);
                 }
             }
-        }
+            
+            // Handle Education section flag
+            $hasEducation = toPostgresBool(isset($_POST['has_education']) && $_POST['has_education'] === 'yes');
+            $stmt = $db->prepare("UPDATE users SET has_education = ? WHERE id = ?");
+            $stmt->bindValue(1, $hasEducation, PDO::PARAM_BOOL);
+            $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+            $stmt->execute();
 
-        // ✅ FIXED: Handle Experience section flag - convert "yes"/"no" to boolean
-        $hasExperience = toPostgresBool(isset($_POST['has_experience']) && $_POST['has_experience'] === 'yes');
-        $stmt = $db->prepare("UPDATE users SET has_experience = ? WHERE id = ?");
-        $stmt->bindValue(1, $hasExperience, PDO::PARAM_BOOL);
-        $stmt->bindValue(2, $userId, PDO::PARAM_INT);
-        $stmt->execute();
+            $db->prepare("DELETE FROM education WHERE user_id = ?")->execute([$userId]);
 
-        $db->prepare("DELETE FROM experience WHERE user_id = ?")->execute([$userId]);
+            if ($hasEducation && isset($_POST['education_degree'])) {
+                foreach ($_POST['education_degree'] as $index => $degree) {
+                    $degree = sanitize_input($degree);
+                    if (!empty($degree)) {
+                        $stmt = $db->prepare("INSERT INTO education (user_id, degree, institution, start_date, end_date, description, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                        $stmt->execute([
+                            $userId,
+                            $degree,
+                            sanitize_input($_POST['education_institution'][$index] ?? ''),
+                            sanitize_input($_POST['education_start'][$index] ?? ''),
+                            sanitize_input($_POST['education_end'][$index] ?? ''),
+                            sanitize_input($_POST['education_description'][$index] ?? ''),
+                            $index
+                        ]);
+                    }
+                }
+            }
 
-        if ($hasExperience && isset($_POST['experience_title'])) {
-            foreach ($_POST['experience_title'] as $index => $title) {
-                if (!empty(trim($title))) {
-                    $stmt = $db->prepare("INSERT INTO experience (user_id, job_title, company, start_date, end_date, description, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([
-                        $userId,
-                        trim($title),
-                        trim($_POST['experience_company'][$index] ?? ''),
-                        trim($_POST['experience_start'][$index] ?? ''),
-                        trim($_POST['experience_end'][$index] ?? ''),
-                        trim($_POST['experience_description'][$index] ?? ''),
-                        $index
-                    ]);
-                    
-                    $expId = $db->lastInsertId();
-                    
-                    // Save per-experience keywords
-                    if (isset($_POST['experience_keywords'][$index])) {
-                        $raw = trim($_POST['experience_keywords'][$index]);
-                        if ($raw !== '') {
-                            $parts = array_filter(array_map('trim', explode(',', $raw)));
-                            $kOrder = 0;
-                            $insertKw = $db->prepare("INSERT INTO experience_keywords (experience_id, keyword, display_order) VALUES (?, ?, ?)");
-                            foreach ($parts as $kw) {
-                                if ($kw === '') continue;
-                                $insertKw->execute([$expId, $kw, $kOrder++]);
+            // Handle Experience section flag
+            $hasExperience = toPostgresBool(isset($_POST['has_experience']) && $_POST['has_experience'] === 'yes');
+            $stmt = $db->prepare("UPDATE users SET has_experience = ? WHERE id = ?");
+            $stmt->bindValue(1, $hasExperience, PDO::PARAM_BOOL);
+            $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $db->prepare("DELETE FROM experience WHERE user_id = ?")->execute([$userId]);
+
+            if ($hasExperience && isset($_POST['experience_title'])) {
+                foreach ($_POST['experience_title'] as $index => $exp_title) {
+                    $exp_title = sanitize_input($exp_title);
+                    if (!empty($exp_title)) {
+                        $stmt = $db->prepare("INSERT INTO experience (user_id, job_title, company, start_date, end_date, description, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                        $stmt->execute([
+                            $userId,
+                            $exp_title,
+                            sanitize_input($_POST['experience_company'][$index] ?? ''),
+                            sanitize_input($_POST['experience_start'][$index] ?? ''),
+                            sanitize_input($_POST['experience_end'][$index] ?? ''),
+                            sanitize_input($_POST['experience_description'][$index] ?? ''),
+                            $index
+                        ]);
+                        
+                        $expId = $db->lastInsertId();
+                        
+                        // Save per-experience keywords
+                        if (isset($_POST['experience_keywords'][$index])) {
+                            $raw = sanitize_input($_POST['experience_keywords'][$index]);
+                            if ($raw !== '') {
+                                $parts = array_filter(array_map('trim', explode(',', $raw)));
+                                $kOrder = 0;
+                                $insertKw = $db->prepare("INSERT INTO experience_keywords (experience_id, keyword, display_order) VALUES (?, ?, ?)");
+                                foreach ($parts as $kw) {
+                                    if ($kw === '') continue;
+                                    // Validate keyword length
+                                    if (mb_strlen($kw, 'UTF-8') <= 150) {
+                                        $insertKw->execute([$expId, $kw, $kOrder++]);
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        // ✅ FIXED: Handle Achievements section flag - convert "yes"/"no" to boolean
-        $hasAchievements = toPostgresBool(isset($_POST['has_achievements']) && $_POST['has_achievements'] === 'yes');
-        $stmt = $db->prepare("UPDATE users SET has_achievements = ? WHERE id = ?");
-        $stmt->bindValue(1, $hasAchievements, PDO::PARAM_BOOL);
-        $stmt->bindValue(2, $userId, PDO::PARAM_INT);
-        $stmt->execute();
+            // Handle Achievements section flag
+            $hasAchievements = toPostgresBool(isset($_POST['has_achievements']) && $_POST['has_achievements'] === 'yes');
+            $stmt = $db->prepare("UPDATE users SET has_achievements = ? WHERE id = ?");
+            $stmt->bindValue(1, $hasAchievements, PDO::PARAM_BOOL);
+            $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+            $stmt->execute();
 
-        $db->prepare("DELETE FROM achievements WHERE user_id = ?")->execute([$userId]);
+            $deleteStmt = $db->prepare("DELETE FROM achievements WHERE user_id = ?");
+            $deleteStmt->execute([$userId]);
 
-        if ($hasAchievements && isset($_POST['achievement_title'])) {
-            foreach ($_POST['achievement_title'] as $index => $title) {
-                if (!empty(trim($title))) {
-                    $stmt = $db->prepare("INSERT INTO achievements (user_id, title, achievement_date, description, icon, display_order) VALUES (?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([
-                        $userId,
-                        trim($title),
-                        trim($_POST['achievement_date'][$index] ?? ''),
-                        trim($_POST['achievement_description'][$index] ?? ''),
-                        trim($_POST['achievement_icon'][$index] ?? 'fa-trophy'),
-                        $index
-                    ]);
-                }
-            }
-        }
-
-        // ✅ CRITICAL FIX: Handle Technologies - is_custom is a BOOLEAN column
-        $db->prepare("DELETE FROM user_technologies WHERE user_id = ?")->execute([$userId]);
-
-        // Get available categories
-        $categories = ['Frontend', 'Backend', 'Databases', 'DevOps', 'Multimedia', 'Mobile', 'Testing'];
-
-        foreach ($categories as $category) {
-            $fieldName = 'tech_' . strtolower(str_replace(' ', '_', $category));
-            
-            if (!empty($_POST[$fieldName]) && is_array($_POST[$fieldName])) {
-                $displayOrder = 0;
-                $hasOtherChecked = false;
-                $customValue = '';
-                
-                // First pass: check if "Other" is selected and get custom value
-                foreach ($_POST[$fieldName] as $tech) {
-                    if (trim($tech) === 'Other') {
-                        $hasOtherChecked = true;
-                    } elseif (strpos($tech, 'custom:') === 0) {
-                        $customValue = trim(substr($tech, 7));
+            if ($hasAchievements && isset($_POST['achievement_title'])) {
+                foreach ($_POST['achievement_title'] as $index => $ach_title) {
+                    $ach_title = sanitize_input($ach_title);
+                    if (!empty($ach_title)) {
+                        $stmt = $db->prepare("INSERT INTO achievements (user_id, title, achievement_date, description, icon, display_order) VALUES (?, ?, ?, ?, ?, ?)");
+                        $stmt->execute([
+                            $userId,
+                            $ach_title,
+                            sanitize_input($_POST['achievement_date'][$index] ?? ''),
+                            sanitize_input($_POST['achievement_description'][$index] ?? ''),
+                            sanitize_input($_POST['achievement_icon'][$index] ?? 'fa-trophy'),
+                            $index
+                        ]);
                     }
                 }
+            }
+
+            // Handle Technologies
+            $db->prepare("DELETE FROM user_technologies WHERE user_id = ?")->execute([$userId]);
+
+            $categories = ['Frontend', 'Backend', 'Databases', 'DevOps', 'Multimedia', 'Mobile', 'Testing'];
+
+            foreach ($categories as $category) {
+                $fieldName = 'tech_' . strtolower(str_replace(' ', '_', $category));
                 
-                // Second pass: insert technologies
-                foreach ($_POST[$fieldName] as $tech) {
-                    $tech = trim($tech);
-                    if (empty($tech)) continue;
+                if (!empty($_POST[$fieldName]) && is_array($_POST[$fieldName])) {
+                    $displayOrder = 0;
+                    $hasOtherChecked = false;
+                    $customValue = '';
                     
-                    // Skip the "custom:" entry - we'll handle it separately
-                    if (strpos($tech, 'custom:') === 0) continue;
-                    
-                    // ✅ CRITICAL: Convert is_custom to proper boolean
-                    $isCustom = false;
-                    
-                    // If this is "Other" and we have a custom value, use the custom value instead
-                    if ($tech === 'Other' && !empty($customValue)) {
-                        $tech = htmlspecialchars($customValue, ENT_QUOTES, 'UTF-8');
-                        if (strlen($tech) > 100) {
-                            $tech = substr($tech, 0, 100);
+                    // First pass: check if "Other" is selected and get custom value
+                    foreach ($_POST[$fieldName] as $tech) {
+                        if (trim($tech) === 'Other') {
+                            $hasOtherChecked = true;
+                        } elseif (strpos($tech, 'custom:') === 0) {
+                            $customValue = sanitize_input(substr($tech, 7));
                         }
-                        $isCustom = true; // This is a custom entry
-                    } elseif ($tech === 'Other') {
-                        // "Other" is checked but no custom value provided, skip it
-                        continue;
                     }
                     
-                    // Sanitize preset options too
-                    $tech = htmlspecialchars($tech, ENT_QUOTES, 'UTF-8');
-                    
-                    // ✅ CRITICAL FIX: Use bindValue with PDO::PARAM_BOOL for is_custom
-                    $stmt = $db->prepare("INSERT INTO user_technologies (user_id, category, technology_name, is_custom, display_order) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->bindValue(1, $userId, PDO::PARAM_INT);
-                    $stmt->bindValue(2, $category, PDO::PARAM_STR);
-                    $stmt->bindValue(3, $tech, PDO::PARAM_STR);
-                    $stmt->bindValue(4, toPostgresBool($isCustom), PDO::PARAM_BOOL); // ✅ THIS WAS THE BUG!
-                    $stmt->bindValue(5, $displayOrder, PDO::PARAM_INT);
-                    $stmt->execute();
-                    
-                    $displayOrder++;
+                    // Second pass: insert technologies
+                    foreach ($_POST[$fieldName] as $tech) {
+                        $tech = sanitize_input($tech);
+                        if (empty($tech)) continue;
+                        
+                        // Skip the "custom:" entry - we'll handle it separately
+                        if (strpos($tech, 'custom:') === 0) continue;
+                        
+                        $isCustom = false;
+                        
+                        // If this is "Other" and we have a custom value, use the custom value instead
+                        if ($tech === 'Other' && !empty($customValue)) {
+                            $tech = $customValue;
+                            $isCustom = true;
+                            
+                            // Validate custom tech name length
+                            if (mb_strlen($tech, 'UTF-8') > 100) {
+                                $tech = mb_substr($tech, 0, 100, 'UTF-8');
+                            }
+                        } elseif ($tech === 'Other') {
+                            // "Other" is checked but no custom value provided, skip it
+                            continue;
+                        }
+                        
+                        // Sanitize and validate preset options too
+                        $tech = htmlspecialchars($tech, ENT_QUOTES, 'UTF-8');
+                        
+                        $stmt = $db->prepare("INSERT INTO user_technologies (user_id, category, technology_name, is_custom, display_order) VALUES (?, ?, ?, ?, ?)");
+                        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+                        $stmt->bindValue(2, $category, PDO::PARAM_STR);
+                        $stmt->bindValue(3, $tech, PDO::PARAM_STR);
+                        $stmt->bindValue(4, toPostgresBool($isCustom), PDO::PARAM_BOOL);
+                        $stmt->bindValue(5, $displayOrder, PDO::PARAM_INT);
+                        $stmt->execute();
+                        
+                        $displayOrder++;
+                    }
                 }
             }
-        }
 
-        // Handle Global Experience Traits
-        $db->prepare("DELETE FROM experience_traits_global WHERE user_id = ?")->execute([$userId]);
+            // Handle Global Experience Traits
+            $db->prepare("DELETE FROM experience_traits_global WHERE user_id = ?")->execute([$userId]);
 
-        if (!empty($_POST['experience_traits_global']) && is_array($_POST['experience_traits_global'])) {
-            $insertG = $db->prepare("INSERT INTO experience_traits_global (user_id, trait_icon, trait_label, display_order) VALUES (?, ?, ?, ?)");
-            $gOrder = 0;
-            foreach ($_POST['experience_traits_global'] as $g) {
-                if (trim($g) === '') continue;
-                $parts = explode('|', $g, 2);
-                $icon = trim($parts[0] ?? '');
-                $label = trim($parts[1] ?? '');
-                if ($label === '') continue;
-                $insertG->execute([$userId, $icon, $label, $gOrder++]);
+            if (!empty($_POST['experience_traits_global']) && is_array($_POST['experience_traits_global'])) {
+                $insertG = $db->prepare("INSERT INTO experience_traits_global (user_id, trait_icon, trait_label, display_order) VALUES (?, ?, ?, ?)");
+                $gOrder = 0;
+                foreach ($_POST['experience_traits_global'] as $g) {
+                    $g = sanitize_input($g);
+                    if ($g === '') continue;
+                    $parts = explode('|', $g, 2);
+                    $icon = sanitize_input($parts[0] ?? '');
+                    $label = sanitize_input($parts[1] ?? '');
+                    if ($label === '') continue;
+                    
+                    // Validate lengths
+                    if (mb_strlen($icon, 'UTF-8') <= 100 && mb_strlen($label, 'UTF-8') <= 150) {
+                        $insertG->execute([$userId, $icon, $label, $gOrder++]);
+                    }
+                }
             }
+            
+            $db->commit();
+            
+            $sessionManager->setFlash('success', 'Resume updated successfully!');
+            header("Location: index.php");
+            exit;
+            
+        } catch (PDOException $e) {
+            $db->rollBack();
+            $error = "Failed to save: " . $e->getMessage();
         }
-        
-        $db->commit();
-        
-        $sessionManager->setFlash('success', 'Resume updated successfully!');
-        header("Location: index.php");
-        exit;
-        
-    } catch (PDOException $e) {
-        $db->rollBack();
-        $error = "Failed to save: " . $e->getMessage();
     }
 }
 
@@ -337,7 +484,7 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
         .section-toggle select { padding: 8px 12px; border-radius: 6px; border: 2px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-weight: 600; cursor: pointer; }
         .section-content { display: none; }
         .section-content.active { display: block; }
-        .no-data-message { padding: 15px; background: rgba(239, 35, 60, 0.1); border: 2px solid rgba(239, 35, 60, 0.3); border-radius: 8px; color: var(--accent-color); font-weight: 600; text-align: center; }
+        .no-data-message { padding: 15px; background: rgba(239, 35, 60, 0.1); border: 2px solid rgba(239, 35, 60, 0.3); border-radius: 8px; color: var(--text-primary); font-weight: 600; text-align: center; }
         
         .tech-category-section { margin-bottom: 25px; padding: 20px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); }
         .tech-category-title { font-weight: 700; color: var(--accent-color); margin-bottom: 15px; font-size: 1.1rem; }
@@ -388,31 +535,81 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Full Name *</label>
-                                <input type="text" name="fullname" class="form-input" value="<?php echo htmlspecialchars($userData['fullname'] ?? ''); ?>" required>
+                                <input 
+                                    type="text" 
+                                    name="fullname" 
+                                    class="form-input" 
+                                    value="<?php echo htmlspecialchars($userData['fullname'] ?? ''); ?>" 
+                                    maxlength="100"
+                                    required
+                                    placeholder="Enter your full name"
+                                >
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Title</label>
-                                <input type="text" name="title" class="form-input" value="<?php echo htmlspecialchars($userData['title'] ?? ''); ?>">
+                                <label class="form-label">Title/Position</label>
+                                <input 
+                                    type="text" 
+                                    name="title" 
+                                    class="form-input" 
+                                    value="<?php echo htmlspecialchars($userData['title'] ?? ''); ?>"
+                                    maxlength="100"
+                                    placeholder="e.g., Full Stack Developer"
+                                >
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">Email</label>
-                                <input type="email" name="email" class="form-input" value="<?php echo htmlspecialchars($userData['email'] ?? ''); ?>">
+                                <label class="form-label">Email *</label>
+                                <input 
+                                    type="email" 
+                                    name="email" 
+                                    class="form-input" 
+                                    value="<?php echo htmlspecialchars($userData['email'] ?? ''); ?>"
+                                    maxlength="100"
+                                    required
+                                    placeholder="your.email@example.com"
+                                >
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Contact</label>
-                                <input type="text" name="contact" class="form-input" value="<?php echo htmlspecialchars($userData['contact'] ?? ''); ?>">
+                                <label class="form-label">Contact Number</label>
+                                <input 
+                                    type="tel" 
+                                    name="contact" 
+                                    class="form-input" 
+                                    value="<?php echo htmlspecialchars($userData['contact'] ?? ''); ?>"
+                                    maxlength="50"
+                                    pattern="[0-9\s\-\+\(\)]+"
+                                    placeholder="+1 (555) 123-4567"
+                                    title="Please enter a valid phone number"
+                                >
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">Age</label>
-                                <input type="number" name="age" class="form-input" value="<?php echo htmlspecialchars($userData['age'] ?? ''); ?>">
+                                <label class="form-label">Age *</label>
+                                <input 
+                                    type="number" 
+                                    name="age" 
+                                    class="form-input" 
+                                    value="<?php echo htmlspecialchars($userData['age'] ?? ''); ?>"
+                                    min="0"
+                                    max="150"
+                                    required
+                                    placeholder="Enter your age"
+                                    inputmode="numeric"
+                                >
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Address</label>
-                                <input type="text" name="address" class="form-input" value="<?php echo htmlspecialchars($userData['address'] ?? ''); ?>">
+                                <label class="form-label">Address *</label>
+                                <input 
+                                    type="text" 
+                                    name="address" 
+                                    class="form-input" 
+                                    value="<?php echo htmlspecialchars($userData['address'] ?? ''); ?>"
+                                    maxlength="255"
+                                    required
+                                    placeholder="City, State/Province, Country"
+                                >
                             </div>
                         </div>
                     </div>
@@ -423,16 +620,43 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">LinkedIn</label>
-                                <input type="url" name="linkedin" class="form-input" value="<?php echo htmlspecialchars($socialLinks[0]['url'] ?? ''); ?>" placeholder="https://linkedin.com/in/yourprofile">
+                                <input 
+                                    type="url" 
+                                    name="linkedin" 
+                                    class="form-input" 
+                                    value="<?php echo htmlspecialchars($socialLinks[0]['url'] ?? ''); ?>" 
+                                    maxlength="255"
+                                    placeholder="https://linkedin.com/in/yourprofile"
+                                    pattern="https?://.+"
+                                    title="Please enter a valid URL starting with http:// or https://"
+                                >
                             </div>
                             <div class="form-group">
                                 <label class="form-label">GitHub</label>
-                                <input type="url" name="github" class="form-input" value="<?php echo htmlspecialchars($socialLinks[1]['url'] ?? ''); ?>" placeholder="https://github.com/yourusername">
+                                <input 
+                                    type="url" 
+                                    name="github" 
+                                    class="form-input" 
+                                    value="<?php echo htmlspecialchars($socialLinks[1]['url'] ?? ''); ?>"
+                                    maxlength="255"
+                                    placeholder="https://github.com/yourusername"
+                                    pattern="https?://.+"
+                                    title="Please enter a valid URL starting with http:// or https://"
+                                >
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Custom Link</label>
-                            <input type="url" name="custom_link" class="form-input" value="<?php echo htmlspecialchars($socialLinks[2]['url'] ?? ''); ?>" placeholder="https://yourwebsite.com">
+                            <input 
+                                type="url" 
+                                name="custom_link" 
+                                class="form-input" 
+                                value="<?php echo htmlspecialchars($socialLinks[2]['url'] ?? ''); ?>"
+                                maxlength="255"
+                                placeholder="https://yourwebsite.com"
+                                pattern="https?://.+"
+                                title="Please enter a valid URL starting with http:// or https://"
+                            >
                         </div>
                     </div>
 
@@ -861,119 +1085,210 @@ function a($v){ return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); }
         }
         
         function addEducation() {
-            const container = document.getElementById('education-container');
-            const html = `
-                <div class="repeater-item">
-                    <div class="form-group">
-                        <label class="form-label">Degree Program *</label>
-                        <input type="text" name="education_degree[]" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Institution *</label>
-                        <input type="text" name="education_institution[]" class="form-input" required>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Start Date</label>
-                            <input type="text" name="education_start[]" class="form-input" placeholder="2023">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">End Date</label>
-                            <input type="text" name="education_end[]" class="form-input" placeholder="Present">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <textarea name="education_description[]" class="form-textarea" rows="3"></textarea>
-                    </div>
-                    <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+        const container = document.getElementById('education-container');
+        const html = `
+            <div class="repeater-item">
+                <div class="form-group">
+                    <label class="form-label">Degree Program *</label>
+                    <input 
+                        type="text" 
+                        name="education_degree[]" 
+                        class="form-input" 
+                        maxlength="200"
+                        required
+                        placeholder="e.g., Bachelor of Science in Computer Science"
+                    >
                 </div>
-            `;
-            container.insertAdjacentHTML('beforeend', html);
-        }
-        
-        function addExperience() {
-            const container = document.getElementById('experience-container');
-            const html = `
-                <div class="repeater-item">
-                    <div class="form-group">
-                        <label class="form-label">Job Title/Position</label>
-                        <input type="text" name="experience_title[]" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Company/Project</label>
-                        <input type="text" name="experience_company[]" class="form-input">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Start Date</label>
-                            <input type="text" name="experience_start[]" class="form-input" placeholder="Jan 2023">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">End Date</label>
-                            <input type="text" name="experience_end[]" class="form-input" placeholder="Present">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <textarea name="experience_description[]" class="form-textarea" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Keywords (comma-separated)</label>
-                        <input type="text" name="experience_keywords[]" class="form-input" placeholder="e.g., Machine Learning, Data Visualization, Analytics">
-                        <small class="form-note">Enter keywords separated by commas. They will display as tags under the description.</small>
-                    </div>
-                    <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+                <div class="form-group">
+                    <label class="form-label">Institution *</label>
+                    <input 
+                        type="text" 
+                        name="education_institution[]" 
+                        class="form-input" 
+                        maxlength="200"
+                        required
+                        placeholder="e.g., University of Technology"
+                    >
                 </div>
-            `;
-            container.insertAdjacentHTML('beforeend', html);
-        }
-        
-        function addAchievement() {
-            const container = document.getElementById('achievement-container');
-            const html = `
-                <div class="repeater-item">
+                <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Achievement Title</label>
-                        <input type="text" name="achievement_title[]" class="form-input">
+                        <label class="form-label">Start Date</label>
+                        <input 
+                            type="text" 
+                            name="education_start[]" 
+                            class="form-input" 
+                            maxlength="50"
+                            placeholder="2020"
+                        >
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Date</label>
-                        <input type="text" name="achievement_date[]" class="form-input" placeholder="2024">
+                        <label class="form-label">End Date</label>
+                        <input 
+                            type="text" 
+                            name="education_end[]" 
+                            class="form-input" 
+                            maxlength="50"
+                            placeholder="Present"
+                        >
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <textarea name="achievement_description[]" class="form-textarea" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Select Icon</label>
-                        <div class="icon-selector">
-                            <div class="icon-option selected" data-icon="fa-trophy" onclick="selectIcon(this)">
-                                <i class="fa-solid fa-trophy"></i>
-                            </div>
-                            <div class="icon-option" data-icon="fa-medal" onclick="selectIcon(this)">
-                                <i class="fa-solid fa-medal"></i>
-                            </div>
-                            <div class="icon-option" data-icon="fa-certificate" onclick="selectIcon(this)">
-                                <i class="fa-solid fa-certificate"></i>
-                            </div>
-                            <div class="icon-option" data-icon="fa-award" onclick="selectIcon(this)">
-                                <i class="fa-solid fa-award"></i>
-                            </div>
-                            <div class="icon-option" data-icon="fa-star" onclick="selectIcon(this)">
-                                <i class="fa-solid fa-star"></i>
-                            </div>
-                            <div class="icon-option" data-icon="fa-code" onclick="selectIcon(this)">
-                                <i class="fa-solid fa-code"></i>
-                            </div>
-                        </div>
-                        <input type="hidden" name="achievement_icon[]" value="fa-trophy" class="icon-input">
-                    </div>
-                    <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
                 </div>
-            `;
-            container.insertAdjacentHTML('beforeend', html);
-        }
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea 
+                        name="education_description[]" 
+                        class="form-textarea" 
+                        rows="3"
+                        maxlength="2000"
+                        placeholder="Describe your education, achievements, or relevant coursework..."
+                    ></textarea>
+                    <small class="form-note">Maximum 2000 characters</small>
+                </div>
+                <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', html);
+    }
+
+    function addExperience() {
+        const container = document.getElementById('experience-container');
+        const html = `
+            <div class="repeater-item">
+                <div class="form-group">
+                    <label class="form-label">Job Title/Position *</label>
+                    <input 
+                        type="text" 
+                        name="experience_title[]" 
+                        class="form-input"
+                        maxlength="200"
+                        required
+                        placeholder="e.g., Senior Software Engineer"
+                    >
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Company/Project</label>
+                    <input 
+                        type="text" 
+                        name="experience_company[]" 
+                        class="form-input"
+                        maxlength="200"
+                        placeholder="e.g., Tech Corp Inc."
+                    >
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Start Date</label>
+                        <input 
+                            type="text" 
+                            name="experience_start[]" 
+                            class="form-input" 
+                            maxlength="50"
+                            placeholder="Jan 2023"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Date</label>
+                        <input 
+                            type="text" 
+                            name="experience_end[]" 
+                            class="form-input" 
+                            maxlength="50"
+                            placeholder="Present"
+                        >
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea 
+                        name="experience_description[]" 
+                        class="form-textarea" 
+                        rows="3"
+                        maxlength="2000"
+                        placeholder="Describe your responsibilities, achievements, and key contributions..."
+                    ></textarea>
+                    <small class="form-note">Maximum 2000 characters</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Keywords (comma-separated)</label>
+                    <input 
+                        type="text" 
+                        name="experience_keywords[]" 
+                        class="form-input" 
+                        maxlength="500"
+                        placeholder="e.g., Machine Learning, Data Visualization, Analytics"
+                    >
+                    <small class="form-note">Enter keywords separated by commas. They will display as tags under the description.</small>
+                </div>
+                <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', html);
+    }
+
+    function addAchievement() {
+        const container = document.getElementById('achievement-container');
+        const html = `
+            <div class="repeater-item">
+                <div class="form-group">
+                    <label class="form-label">Achievement Title *</label>
+                    <input 
+                        type="text" 
+                        name="achievement_title[]" 
+                        class="form-input"
+                        maxlength="200"
+                        required
+                        placeholder="e.g., Best Innovation Award 2024"
+                    >
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date</label>
+                    <input 
+                        type="text" 
+                        name="achievement_date[]" 
+                        class="form-input" 
+                        maxlength="50"
+                        placeholder="2024"
+                    >
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea 
+                        name="achievement_description[]" 
+                        class="form-textarea" 
+                        rows="3"
+                        maxlength="2000"
+                        placeholder="Describe the achievement and its impact..."
+                    ></textarea>
+                    <small class="form-note">Maximum 2000 characters</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Select Icon</label>
+                    <div class="icon-selector">
+                        <div class="icon-option selected" data-icon="fa-trophy" onclick="selectIcon(this)">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-medal" onclick="selectIcon(this)">
+                            <i class="fa-solid fa-medal"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-certificate" onclick="selectIcon(this)">
+                            <i class="fa-solid fa-certificate"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-award" onclick="selectIcon(this)">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-star" onclick="selectIcon(this)">
+                            <i class="fa-solid fa-star"></i>
+                        </div>
+                        <div class="icon-option" data-icon="fa-code" onclick="selectIcon(this)">
+                            <i class="fa-solid fa-code"></i>
+                        </div>
+                    </div>
+                    <input type="hidden" name="achievement_icon[]" value="fa-trophy" class="icon-input">
+                </div>
+                <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', html);
+    }
         
         function selectIcon(element) {
             const container = element.closest('.icon-selector');
